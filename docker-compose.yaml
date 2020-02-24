@@ -1,0 +1,30 @@
+version: "3"
+services:
+  database:
+    image: postgres
+    container_name: "postgres_googli"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    networks:
+      - internal_googli
+
+  googliapparatus:
+    image: dolandrew/googliapparatus
+    container_name: "googliapparatus"
+    ports:
+      - "8080:8080"
+    networks:
+      - internal_googli
+
+  googli-ui:
+    image: dolandrew/googli-ui
+    container_name: "googli-ui"
+    ports:
+      - "3000:3000"
+
+networks:
+  internal_googli:
+    external: true
