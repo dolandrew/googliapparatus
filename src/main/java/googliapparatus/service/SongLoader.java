@@ -46,7 +46,7 @@ public class SongLoader {
                 Element lyrics = blockquotes.get(0);
                 String cleanLyrics = cleanPreLyricText(lyrics);
                 setLyricsBy(songEntity, cleanLyrics);
-                songEntity.setLyrics(removeCreditsFromLyrics(cleanLyrics));
+                songEntity.setLyrics(removeCreditsFromLyrics(cleanLyrics).toLowerCase());
             }
             songEntityRepository.save(songEntity);
         }
