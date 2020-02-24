@@ -12,3 +12,5 @@ mvn spring-boot:run
 
 To push to docker:
 docker push dolandrew/googliapparatus   
+
+ docker run -d -p 5432:5432 --name googli -e POSTGRES_PASSWORD=password postgres
