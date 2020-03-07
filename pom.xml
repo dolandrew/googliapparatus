@@ -61,11 +61,12 @@
             <artifactId>javax.persistence-api</artifactId>
             <version>2.2</version>
         </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>42.2.10</version>
-        </dependency>
+        <!-- use with postgres database properties in application.properties -->
+        <!--<dependency>-->
+            <!--<groupId>org.postgresql</groupId>-->
+            <!--<artifactId>postgresql</artifactId>-->
+            <!--<version>42.2.10</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
@@ -74,6 +75,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <!-- use with in-memory h2 properties in application.properties -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
     <build>
