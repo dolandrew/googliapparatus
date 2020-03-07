@@ -23,7 +23,7 @@ public class SearchController {
 
     @GetMapping("/lyrics")
     public List<SongDTO> searchLyrics(String filter) {
-        List<SongEntity> songEntities = songEntityRepository.findByLyricsContains(filter);
+        List<SongEntity> songEntities = songEntityRepository.findByLyricsContains(filter.toLowerCase());
         List<SongDTO> songs = new ArrayList<>();
         for (SongEntity songEntity : songEntities) {
             SongDTO songDTO = new ObjectMapper().convertValue(songEntity, SongDTO.class);
