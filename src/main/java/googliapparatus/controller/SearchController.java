@@ -1,8 +1,8 @@
 package googliapparatus.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import googliapparatus.SongEntity;
 import googliapparatus.dto.SongDTO;
+import googliapparatus.entity.SongEntity;
 import googliapparatus.repository.SongEntityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;

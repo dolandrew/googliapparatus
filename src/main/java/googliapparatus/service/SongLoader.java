@@ -1,6 +1,6 @@
 package googliapparatus.service;
 
-import googliapparatus.SongEntity;
+import googliapparatus.entity.SongEntity;
 import googliapparatus.repository.SongEntityRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -10,8 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
 import java.util.UUID;
+
+import static org.hibernate.internal.util.collections.CollectionHelper.isNotEmpty;
 
 @Component
 public class SongLoader {
@@ -26,20 +27,21 @@ public class SongLoader {
 
 //    @PostConstruct
     public void loadSongs() throws InterruptedException {
-        songEntityRepository.deleteAll();
         String response = restTemplate.getForObject(PHISH_NET_URL + "/songs", String.class);
         Document doc = Jsoup.parse(response);
         Elements elements = doc.getElementsByTag("tr");
         for (Element element : elements.subList(1, elements.size())) {
             Element td = element.getElementsByTag("td").get(0);
             String songName = td.wholeText();
+            if (isNotEmpty(songEntityRepository.findAllByName(songName))) {
+                continue;
+            }
             SongEntity songEntity = new SongEntity();
             songEntity.setId(UUID.randomUUID().toString());
             songEntity.setLink(PHISH_NET_URL + td.getElementsByTag("a").attr("href") + "/lyrics");
             songEntity.setName(songName);
             songEntity.setNameLower(songName.toLowerCase());
 
-            Thread.sleep(3000);
             String lyricsResponse = restTemplate.getForObject(songEntity.getLink(), String.class);
             Document lyricsDoc = Jsoup.parse(lyricsResponse);
             Elements blockquotes = lyricsDoc.getElementsByTag("blockquote");
@@ -50,6 +52,7 @@ public class SongLoader {
                 songEntity.setLyrics(removeCreditsFromLyrics(cleanLyrics).toLowerCase());
             }
             songEntityRepository.save(songEntity);
+            Thread.sleep(15000);
         }
     }
 

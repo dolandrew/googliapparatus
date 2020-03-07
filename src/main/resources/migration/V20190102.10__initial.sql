@@ -1,9 +1,9 @@
-create table song_entity (
-  id              varchar(255) not null,
-  name            varchar(255) not null,
-  name_lower      varchar(255) not null,
-  link            varchar(255) not null,
-  lyrics          varchar(10485760),
-  lyrics_by       varchar(255),
-  primary key (id)
+CREATE TABLE IF NOT EXISTS song_entity (
+  id              VARCHAR(255) NOT NULL,
+  name            VARCHAR(255) NOT NULL,
+  name_lower      VARCHAR(255) NOT NULL,
+  link            VARCHAR(255) NOT NULL,
+  lyrics          TEXT,
+  lyrics_by       VARCHAR(255),
+  PRIMARY KEY (id)
 );
