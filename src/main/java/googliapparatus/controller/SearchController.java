@@ -23,12 +23,20 @@ public class SearchController {
 
     @GetMapping("/lyrics")
     public List<SongDTO> searchLyrics(String filter) {
-        List<SongEntity> songEntities = songEntityRepository.findByLyricsContains(filter.toLowerCase());
+        List<SongEntity> songEntities = songEntityRepository.findByLyricsContains(validateAndSanitizeFilter(filter));
         List<SongDTO> songs = new ArrayList<>();
         for (SongEntity songEntity : songEntities) {
             SongDTO songDTO = new ObjectMapper().convertValue(songEntity, SongDTO.class);
             songs.add(songDTO);
         }
         return songs;
+    }
+
+    private String validateAndSanitizeFilter(String filter) {
+        if (filter == null) {
+            filter = "";
+        }
+        filter = filter.trim().toLowerCase();
+        return filter;
     }
 }
