@@ -76,8 +76,10 @@ public class SongLoader {
                             .replace("Music (BMI)", "")
                             .replace("(BMI)", "")
                             .replace("(BMI_", "")
+                            .replace("seven below inc.", "")
                             .replace("©", "")
-                            .replace("ï¿½", "");
+                            .replace("ï¿½", "")
+                            .replace("  ", " ");
     }
 
     private String removeCreditsFromLyrics(String cleanLyrics) {
