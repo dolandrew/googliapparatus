@@ -14,7 +14,7 @@ public class SnippetHelper {
                 String snippet = getSnippet(filter, lyrics, index, snippetLength);
                 snippet = capitalize(snippet);
                 snippet = highlightFilter(filter, snippet);
-                songDTO.getLyricSnippets().add(snippet);
+                songDTO.getLyricSnippets().add(snippet.trim());
                 index = getNextFilterOccurencce(filter, lyrics, index);
             }
         }
