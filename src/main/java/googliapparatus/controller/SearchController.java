@@ -1,11 +1,15 @@
 package googliapparatus.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import googliapparatus.dto.Counter;
+import googliapparatus.dto.GoogliResponseDTO;
 import googliapparatus.dto.SongDTO;
 import googliapparatus.entity.SongEntity;
 import googliapparatus.helper.SnippetHelper;
 import googliapparatus.repository.SongEntityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,15 +24,25 @@ import static java.util.Collections.emptyList;
 @RestController
 @RequestMapping("/api/search")
 @CrossOrigin
+@EnableScheduling
 public class SearchController {
 
     @Autowired
     private SongEntityRepository songEntityRepository;
 
+    private Counter counter = new Counter();
+
+    @Scheduled(initialDelay = 0L, fixedDelay = 30000)
+    public void clearOutOldData() {
+        counter.clearOutOldSessions();
+        counter.clearOutOldSearches();
+    }
+
     @GetMapping("/lyrics")
-    public List<SongDTO> searchLyrics(String filter) {
+    public GoogliResponseDTO searchLyrics(String uuid, String filter) {
+        counter.session(uuid);
         if (filterIsEmpty(filter)) {
-            return emptyList();
+            return new GoogliResponseDTO(emptyList(), counter);
         }
         filter = filter.trim().toLowerCase();
         List<SongEntity> songEntities = songEntityRepository.findByLyricsContainsOrNameLowerContains(filter, filter);
@@ -40,10 +54,9 @@ public class SearchController {
             songs.add(songDTO);
             snippetHelper.findRelevantLyrics(filter, songEntity, songDTO);
         }
-
+        counter.search();
         songs.sort(Comparator.comparing(SongDTO::getName));
-
-        return songs;
+        return new GoogliResponseDTO(songs, counter);
     }
 
     private boolean filterIsEmpty(String filter) {

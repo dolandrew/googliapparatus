@@ -42,15 +42,16 @@ public class SearchControllerIntegrationTest {
     @Test
     public void testSearchLyrics_withFilter() {
         with().queryParam("filter", "land")
-            .expect().statusCode(200)
-            .and().body("name",
+            .expect().statusCode(200).and()
+            .body("songs.name",
                 hasItems("The Lizards", "Esther", "The Mango Song", "Roses Are Free", "Limb By Limb", "Sand"))
-            .body("size()", is(56))
-            .body("link", everyItem(is(notNullValue())))
-            .body("name", everyItem(is(notNullValue())))
-                .body("lyricSnippets", hasItems(containsInAnyOrder("earthward till she <b>land</b>ed in the nasty part..."),
-                        containsInAnyOrder("to his knees, sees s<b>land</b>er on wrap paper tie..."),
-                        containsInAnyOrder("car and cruise the <b>land</b> of the brave and fr...")))
+            .body("songs.size()", is(56))
+            .body("songs.link", everyItem(is(notNullValue())))
+            .body("songs.name", everyItem(is(notNullValue())))
+            .body("songs.lyricSnippets",
+                    hasItems(containsInAnyOrder("earthward till she <b>land</b>ed in the nasty part..."),
+                             containsInAnyOrder("to his knees, sees s<b>land</b>er on wrap paper tie..."),
+                             containsInAnyOrder("car and cruise the <b>land</b> of the brave and fr...")))
             .when().get("/api/search/lyrics");
     }
 
@@ -58,12 +59,12 @@ public class SearchControllerIntegrationTest {
     public void testSearchLyrics_filterIsNotCaseSensitive() {
         with().queryParam("filter", "LaNd")
                 .expect().statusCode(200)
-                .and().body("name",
+                .and().body("songs.name",
                     hasItems("The Lizards", "Esther", "The Mango Song", "Roses Are Free", "Limb By Limb", "Sand"))
-                .body("size()", is(56))
-                .body("link", everyItem(is(notNullValue())))
-                .body("name", everyItem(is(notNullValue())))
-                .body("lyricSnippets", hasItems(containsInAnyOrder("earthward till she <b>land</b>ed in the nasty part..."),
+                .body("songs.size()", is(56))
+                .body("songs.link", everyItem(is(notNullValue())))
+                .body("songs.name", everyItem(is(notNullValue())))
+                .body("songs.lyricSnippets", hasItems(containsInAnyOrder("earthward till she <b>land</b>ed in the nasty part..."),
                         containsInAnyOrder("to his knees, sees s<b>land</b>er on wrap paper tie..."),
                         containsInAnyOrder("car and cruise the <b>land</b> of the brave and fr...")))
                 .when().get("/api/search/lyrics");
@@ -73,11 +74,11 @@ public class SearchControllerIntegrationTest {
     public void testSearchLyrics_withFilterPhrase() {
         with().queryParam("filter", "bereft of oar")
                 .expect().statusCode(200)
-                .and().body("name", hasItems("Guelah Papyrus"))
-                .body("size()", is(1))
-                .body("link", everyItem(is(notNullValue())))
-                .body("name", everyItem(is(notNullValue())))
-                .body("lyricSnippets", hasItems(contains("aboard a craft <b>bereft of oar</b> I rowed upstream to...")))
+                .and().body("songs.name", hasItems("Guelah Papyrus"))
+                .body("songs.size()", is(1))
+                .body("songs.link", everyItem(is(notNullValue())))
+                .body("songs.name", everyItem(is(notNullValue())))
+                .body("songs.lyricSnippets", hasItems(contains("aboard a craft <b>bereft of oar</b> I rowed upstream to...")))
                 .when().get("/api/search/lyrics");
     }
 
@@ -85,25 +86,25 @@ public class SearchControllerIntegrationTest {
     public void testSearchLyrics_withFilter_searchesBySongName() {
         with().queryParam("filter", "you enjoy myself")
                 .expect().statusCode(200)
-                .and().body("name", hasItems("You Enjoy Myself"))
-                .body("size()", is(1))
-                .body("link", everyItem(is(notNullValue())))
-                .body("name", everyItem(is(notNullValue())))
+                .and().body("songs.name", hasItems("You Enjoy Myself"))
+                .body("songs.size()", is(1))
+                .body("songs.link", everyItem(is(notNullValue())))
+                .body("songs.name", everyItem(is(notNullValue())))
                 .when().get("/api/search/lyrics");
     }
 
     @Test
     public void testSearchLyrics_withFilter_resultsAreAlphabetical() {
-        List<LinkedHashMap> response = with().queryParam("filter", "will")
+        LinkedHashMap response = with().queryParam("filter", "will")
                 .expect().statusCode(200)
-                .body("size()", is(110))
-                .body("link", everyItem(is(notNullValue())))
-                .body("name", everyItem(is(notNullValue())))
-                .when().get("/api/search/lyrics").thenReturn().as(List.class);
+                .body("songs.size()", is(110))
+                .body("songs.link", everyItem(is(notNullValue())))
+                .body("songs.name", everyItem(is(notNullValue())))
+                .when().get("/api/search/lyrics").thenReturn().as(LinkedHashMap.class);
 
-        assertEquals("20-20 Vision", response.get(0).get("name"));
-        assertEquals("All of These Dreams", response.get(1).get("name"));
-        assertEquals("Amazing Grace", response.get(2).get("name"));
+        assertEquals("20-20 Vision", ((LinkedHashMap)((List)response.get("songs")).get(0)).get("name"));
+        assertEquals("All of These Dreams", ((LinkedHashMap)((List)response.get("songs")).get(1)).get("name"));
+        assertEquals("Amazing Grace", ((LinkedHashMap)((List)response.get("songs")).get(2)).get("name"));
 
     }
 
@@ -111,12 +112,12 @@ public class SearchControllerIntegrationTest {
     public void testSearchLyrics_filterContainsSpaces() {
         with().queryParam("filter", " land ")
                 .expect().statusCode(200)
-                .and().body("name",
+                .and().body("songs.name",
                     hasItems("The Lizards", "Esther", "The Mango Song", "Roses Are Free", "Limb By Limb", "Sand"))
-                .body("size()", is(56))
-                .body("link", everyItem(is(notNullValue())))
-                .body("name", everyItem(is(notNullValue())))
-                .body("lyricSnippets", hasItem(containsInAnyOrder("earthward till she <b>land</b>ed in the nasty part...")))
+                .body("songs.size()", is(56))
+                .body("songs.link", everyItem(is(notNullValue())))
+                .body("songs.name", everyItem(is(notNullValue())))
+                .body("songs.lyricSnippets", hasItem(containsInAnyOrder("earthward till she <b>land</b>ed in the nasty part...")))
 
                 .when().get("/api/search/lyrics");
     }
@@ -125,14 +126,14 @@ public class SearchControllerIntegrationTest {
     public void testSearchLyrics_emptyFilter() {
         with().queryParam("filter", "")
                 .expect().statusCode(200)
-                .body("size()", is(0))
+                .body("songs.size()", is(0))
                 .when().get("/api/search/lyrics");
     }
 
     @Test
     public void testSearchLyrics_hashtagNoFilter() {
         expect().statusCode(200)
-                .body("size()", is(0))
+                .body("songs.size()", is(0))
                 .when().get("/api/search/lyrics");
     }
 
