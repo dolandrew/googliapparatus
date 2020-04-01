@@ -38,13 +38,6 @@ public class Counter {
         sessions = remaining;
     }
 
-    public int getSearchesPerMinute() {
-        Date oneMinuteAgo = new Date(Instant.now().minus(1, MINUTES).toEpochMilli());
-        return (int) searches.stream()
-                .filter(date -> date.after(oneMinuteAgo))
-                .count();
-    }
-
     public int getSearchesPerHour() {
         Date oneHourAgo = new Date(Instant.now().minus(1, HOURS).toEpochMilli());
         return (int) searches.stream()
@@ -61,6 +54,13 @@ public class Counter {
 
     public int getActiveUsers() {
         Date fiveMinutesAgo = new Date(Instant.now().minus(5, MINUTES).toEpochMilli());
+        return (int) sessions.entrySet().stream()
+                .filter(entry -> entry.getValue().after(fiveMinutesAgo))
+                .count();
+    }
+
+    public int getVisitsToday() {
+        Date fiveMinutesAgo = new Date(Instant.now().minus(1, DAYS).toEpochMilli());
         return (int) sessions.entrySet().stream()
                 .filter(entry -> entry.getValue().after(fiveMinutesAgo))
                 .count();
