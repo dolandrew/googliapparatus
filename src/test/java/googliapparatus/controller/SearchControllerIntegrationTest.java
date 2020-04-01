@@ -42,6 +42,7 @@ public class SearchControllerIntegrationTest {
     @Test
     public void testSearchLyrics_withFilter() {
         with().queryParam("filter", "land")
+            .queryParam("uuid", "some-uuid")
             .expect().statusCode(200).and()
             .body("songs.name",
                 hasItems("The Lizards", "Esther", "The Mango Song", "Roses Are Free", "Limb By Limb", "Sand"))
@@ -58,6 +59,7 @@ public class SearchControllerIntegrationTest {
     @Test
     public void testSearchLyrics_filterIsNotCaseSensitive() {
         with().queryParam("filter", "LaNd")
+                .queryParam("uuid", "some-uuid")
                 .expect().statusCode(200)
                 .and().body("songs.name",
                     hasItems("The Lizards", "Esther", "The Mango Song", "Roses Are Free", "Limb By Limb", "Sand"))
@@ -73,6 +75,7 @@ public class SearchControllerIntegrationTest {
     @Test
     public void testSearchLyrics_withFilterPhrase() {
         with().queryParam("filter", "bereft of oar")
+                .queryParam("uuid", "some-uuid")
                 .expect().statusCode(200)
                 .and().body("songs.name", hasItems("Guelah Papyrus"))
                 .body("songs.size()", is(1))
@@ -85,6 +88,7 @@ public class SearchControllerIntegrationTest {
     @Test
     public void testSearchLyrics_withFilter_searchesBySongName() {
         with().queryParam("filter", "you enjoy myself")
+                .queryParam("uuid", "some-uuid")
                 .expect().statusCode(200)
                 .and().body("songs.name", hasItems("You Enjoy Myself"))
                 .body("songs.size()", is(1))
@@ -96,6 +100,7 @@ public class SearchControllerIntegrationTest {
     @Test
     public void testSearchLyrics_withFilter_resultsAreAlphabetical() {
         LinkedHashMap response = with().queryParam("filter", "will")
+                .queryParam("uuid", "some-uuid")
                 .expect().statusCode(200)
                 .body("songs.size()", is(110))
                 .body("songs.link", everyItem(is(notNullValue())))
@@ -111,6 +116,7 @@ public class SearchControllerIntegrationTest {
     @Test
     public void testSearchLyrics_filterContainsSpaces() {
         with().queryParam("filter", " land ")
+                .queryParam("uuid", "some-uuid")
                 .expect().statusCode(200)
                 .and().body("songs.name",
                     hasItems("The Lizards", "Esther", "The Mango Song", "Roses Are Free", "Limb By Limb", "Sand"))
@@ -125,6 +131,7 @@ public class SearchControllerIntegrationTest {
     @Test
     public void testSearchLyrics_emptyFilter() {
         with().queryParam("filter", "")
+                .queryParam("uuid", "some-uuid")
                 .expect().statusCode(200)
                 .body("songs.size()", is(0))
                 .when().get("/api/search/lyrics");
