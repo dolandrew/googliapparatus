@@ -1,11 +1,13 @@
 package googliapparatus.controller;
 
 import googliapparatus.GoogliApparatusApplication;
+import googliapparatus.service.Tweeter;
 import io.restassured.RestAssured;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -32,6 +34,9 @@ public class SearchControllerIntegrationTest {
 
     @LocalServerPort
     private int serverPort;
+
+    @MockBean
+    private Tweeter tweeter;
 
     @Before
     public void setup() {
