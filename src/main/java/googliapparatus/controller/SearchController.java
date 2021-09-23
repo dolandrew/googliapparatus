@@ -24,8 +24,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 
+import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.jsoup.internal.StringUtil.isBlank;
 
@@ -35,15 +37,19 @@ import static org.jsoup.internal.StringUtil.isBlank;
 @EnableScheduling
 public class SearchController {
 
-    @Autowired
-    private SongEntityRepository songEntityRepository;
+    private final SongEntityRepository songEntityRepository;
 
-    @Autowired
-    private Tweeter tweeter;
+    private final Tweeter tweeter;
 
     private Counter counter = new Counter();
 
     private Logger log = LoggerFactory.getLogger(SearchController.class);
+
+    public SearchController(SongEntityRepository songEntityRepository, Tweeter tweeter) {
+        this.songEntityRepository = songEntityRepository;
+        this.tweeter = tweeter;
+        tweeter.tweet(format("GoogliApparatus started successfully at %s.", new Date()));
+    }
 
     @Scheduled(fixedDelay = 30000)
     public void clearOutOldData() {
