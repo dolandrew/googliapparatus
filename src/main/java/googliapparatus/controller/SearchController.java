@@ -48,7 +48,6 @@ public class SearchController {
     public SearchController(SongEntityRepository songEntityRepository, Tweeter tweeter) {
         this.songEntityRepository = songEntityRepository;
         this.tweeter = tweeter;
-        tweeter.tweet(format("GoogliApparatus started successfully at %s.", new Date()));
     }
 
     @Scheduled(fixedDelay = 30000)
