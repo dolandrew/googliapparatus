@@ -73,8 +73,6 @@ public class SearchController {
         }
         log.info("search term: " + filter);
 
-        tweeter.tweet(filter);
-
         filter = filter.trim().toLowerCase();
         List<SongEntity> songEntities = songEntityRepository.findByLyricsContainsOrNameLowerContains(filter, filter);
         List<SongDTO> songs = new ArrayList<>();
@@ -87,6 +85,9 @@ public class SearchController {
         }
         counter.search();
         songs.sort(Comparator.comparing(SongDTO::getName));
+
+        tweeter.tweet("\"" + filter + "\" returned " + songs.size() + " results");
+
         return new GoogliResponseDTO(songs, counter);
     }
 
