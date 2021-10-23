@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.DAYS;
-import static java.time.temporal.ChronoUnit.HOURS;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 public class Counter {
@@ -38,24 +37,10 @@ public class Counter {
         sessions = remaining;
     }
 
-    public int getSearchesPerHour() {
-        Date oneHourAgo = new Date(Instant.now().minus(1, HOURS).toEpochMilli());
-        return (int) searches.stream()
-                .filter(date -> date.after(oneHourAgo))
-                .count();
-    }
-
     public int getSearchesPerDay() {
         Date oneDayAgo = new Date(Instant.now().minus(1, DAYS).toEpochMilli());
         return (int) searches.stream()
                 .filter(date -> date.after(oneDayAgo))
-                .count();
-    }
-
-    public int getActiveUsers() {
-        Date fiveMinutesAgo = new Date(Instant.now().minus(5, MINUTES).toEpochMilli());
-        return (int) sessions.entrySet().stream()
-                .filter(entry -> entry.getValue().after(fiveMinutesAgo))
                 .count();
     }
 
