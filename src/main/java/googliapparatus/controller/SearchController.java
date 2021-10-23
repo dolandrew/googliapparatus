@@ -86,7 +86,7 @@ public class SearchController {
         counter.search();
         songs.sort(Comparator.comparing(SongDTO::getName));
 
-        tweeter.tweet("\"" + filter + "\" returned " + songs.size() + " results");
+        tweeter.tweet("\"" + filter + "\" returned " + songs.size() + " results\n\n" + System.currentTimeMillis());
 
         return new GoogliResponseDTO(songs, counter);
     }

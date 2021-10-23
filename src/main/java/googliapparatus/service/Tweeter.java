@@ -7,7 +7,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -32,8 +31,11 @@ public class Tweeter {
     @Value("${twitter.access.token.secret}")
     private String accessTokenSecret;
 
-    @Autowired
-    private Environment environment;
+    private final Environment environment;
+
+    public Tweeter(Environment environment) {
+        this.environment = environment;
+    }
 
     public void tweet(String tweet) {
         OAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(apiKey, apiKeySecret);
@@ -56,7 +58,7 @@ public class Tweeter {
             httpClient.execute(httpPost);
             LOG.warn("Successfully posted tweet.");
         } catch (Exception e) {
-            LOG.error("Error trying to tweet: \"" + tweet + "\"");
+            LOG.error("Error trying to tweet: \"" + tweet + "\"", e);
             return;
         }
     }
