@@ -8,6 +8,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -18,6 +20,7 @@ import java.util.UUID;
 import static org.hibernate.internal.util.collections.CollectionHelper.isNotEmpty;
 
 @Component
+@EnableScheduling
 public class SongLoader {
 
     private final RestTemplate restTemplate;
@@ -33,7 +36,7 @@ public class SongLoader {
         this.songEntityRepository = songEntityRepository;
     }
 
-    @PostConstruct
+    @Scheduled(cron="${cron.load.songs}")
     public void loadSongs() throws InterruptedException {
         String response = restTemplate.getForObject(PHISH_NET_URL + "/songs", String.class);
         Document doc = Jsoup.parse(response);
