@@ -51,14 +51,13 @@ public class SongLoader {
         Elements elements = doc.getElementsByTag("tr");
         int allSongs = 1;
         int newSongs = 0;
-        songEntityRepository.deleteAll();
+        songEntityStagingRepository.deleteAll();
         for (Element element : elements.subList(1, elements.size())) {
             newSongs = processSong(element, newSongs);
             Thread.sleep(10000);
             LOG.warn("...processed " + allSongs++ + " / " + elements.size() + " songs...");
         }
         googliTweeter.tweet("Finished processing " + allSongs + " songs successfully. Loading staged songs...");
-        songEntityRepository.deleteAll();
         for (SongEntityStaging song : songEntityStagingRepository.findAll()) {
             SongEntity songEntity = new SongEntity();
             songEntity.setId(song.getId());
