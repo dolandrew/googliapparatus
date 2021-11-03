@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS song_entity (
   name            VARCHAR(255) NOT NULL,
   name_lower      VARCHAR(255) NOT NULL,
   link            VARCHAR(255) NOT NULL,
-  lyrics          TEXT,
+  lyrics          varchar(max),
   lyrics_by       VARCHAR(255),
   PRIMARY KEY (id)
 );

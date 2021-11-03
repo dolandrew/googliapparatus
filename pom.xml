@@ -122,6 +122,10 @@
             <artifactId>signpost-commonshttp4</artifactId>
             <version>1.2</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-jdbc</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

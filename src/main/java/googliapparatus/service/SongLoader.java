@@ -6,10 +6,13 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PostConstruct;
 import java.util.UUID;
 
 import static org.hibernate.internal.util.collections.CollectionHelper.isNotEmpty;
@@ -17,43 +20,60 @@ import static org.hibernate.internal.util.collections.CollectionHelper.isNotEmpt
 @Component
 public class SongLoader {
 
-    @Autowired
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
 
-    @Autowired
-    private SongEntityRepository songEntityRepository;
+    private final SongEntityRepository songEntityRepository;
 
-    private String PHISH_NET_URL = "http://www.phish.net";
+    private static final String PHISH_NET_URL = "http://www.phish.net";
 
-//    @PostConstruct
+    private static final Logger LOG = LoggerFactory.getLogger(SongLoader.class);
+
+    public SongLoader(RestTemplate restTemplate, SongEntityRepository songEntityRepository) {
+        this.restTemplate = restTemplate;
+        this.songEntityRepository = songEntityRepository;
+    }
+
+    @PostConstruct
     public void loadSongs() throws InterruptedException {
         String response = restTemplate.getForObject(PHISH_NET_URL + "/songs", String.class);
         Document doc = Jsoup.parse(response);
         Elements elements = doc.getElementsByTag("tr");
+        int i = 1;
         for (Element element : elements.subList(1, elements.size())) {
-            Element td = element.getElementsByTag("td").get(0);
-            String songName = td.wholeText();
-            if (isNotEmpty(songEntityRepository.findAllByName(songName))) {
-                continue;
-            }
-            SongEntity songEntity = new SongEntity();
-            songEntity.setId(UUID.randomUUID().toString());
-            songEntity.setLink(PHISH_NET_URL + td.getElementsByTag("a").attr("href") + "/lyrics");
-            songEntity.setName(songName);
-            songEntity.setNameLower(songName.toLowerCase());
-
-            String lyricsResponse = restTemplate.getForObject(songEntity.getLink(), String.class);
-            Document lyricsDoc = Jsoup.parse(lyricsResponse);
-            Elements blockquotes = lyricsDoc.getElementsByTag("blockquote");
-            if (blockquotes.size() > 0) {
-                Element lyrics = blockquotes.get(0);
-                String cleanLyrics = cleanPreLyricText(lyrics);
-                setLyricsBy(songEntity, cleanLyrics);
-                songEntity.setLyrics(removeCreditsFromLyrics(cleanLyrics).toLowerCase());
-            }
-            songEntityRepository.save(songEntity);
+            processSong(element);
             Thread.sleep(15000);
+            LOG.warn("...processed " + i++ + " / " + elements.size() + " songs...");
         }
+        LOG.warn("Finished processing " + elements.size() + " songs successfully.");
+    }
+
+    @Transactional
+    public void processSong(Element element) throws InterruptedException {
+        SongEntity songEntity = new SongEntity();
+
+        Element td = element.getElementsByTag("td").get(0);
+        String songName = td.wholeText();
+        if (isNotEmpty(songEntityRepository.findAllByName(songName))) {
+            LOG.warn("Skipping " + songName + " because it is already loaded.");
+            return;
+        }
+        LOG.warn("Processing " + songName + "...");
+        songEntity.setId(UUID.randomUUID().toString());
+        songEntity.setLink(PHISH_NET_URL + td.getElementsByTag("a").attr("href") + "/lyrics");
+        songEntity.setName(songName);
+        songEntity.setNameLower(songName.toLowerCase());
+
+        String lyricsResponse = restTemplate.getForObject(songEntity.getLink(), String.class);
+        Document lyricsDoc = Jsoup.parse(lyricsResponse);
+        Elements blockquotes = lyricsDoc.getElementsByTag("blockquote");
+        if (blockquotes.size() > 0) {
+            Element lyrics = blockquotes.get(0);
+            String cleanLyrics = cleanPreLyricText(lyrics);
+            setLyricsBy(songEntity, cleanLyrics);
+            songEntity.setLyrics(removeCreditsFromLyrics(cleanLyrics).toLowerCase());
+        }
+        LOG.warn("Finished processing " + songName + " successfully.");
+        songEntityRepository.save(songEntity);
     }
 
     private void setLyricsBy(SongEntity songEntity, String cleanLyrics) {
