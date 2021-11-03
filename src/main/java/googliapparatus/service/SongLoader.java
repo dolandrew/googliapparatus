@@ -57,7 +57,7 @@ public class SongLoader {
             Thread.sleep(10000);
             LOG.warn("...processed " + allSongs++ + " / " + elements.size() + " songs...");
         }
-        googliTweeter.tweet("Finished processing " + allSongs + " songs successfully. Loading staged songs...");
+        googliTweeter.tweet("Finished staging new songs successfully. Loading...");
         for (SongEntityStaging song : songEntityStagingRepository.findAll()) {
             SongEntity songEntity = new SongEntity();
             songEntity.setId(song.getId());
@@ -68,10 +68,10 @@ public class SongLoader {
             songEntity.setLyricsBy(song.getLyricsBy());
             songEntityRepository.save(songEntity);
         }
-        googliTweeter.tweet("Finished loading staged songs.");
+        googliTweeter.tweet("Finished loading " + newSongs + " new songs.");
     }
 
-    @Transactional()
+    @Transactional
     public int processSong(Element element, int j) throws InterruptedException {
         SongEntityStaging songEntity = new SongEntityStaging();
 

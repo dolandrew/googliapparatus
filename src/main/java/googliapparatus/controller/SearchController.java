@@ -86,7 +86,7 @@ public class SearchController {
 
             googliTweeter.tweet("\"" + filter + "\" returned " + songs.size() + " results\n\n" + System.currentTimeMillis());
         } catch (Exception e) {
-            googliTweeter.tweet("GoogliApparatus caught exception during search: " + e.getCause());
+            googliTweeter.tweet("GoogliApparatus caught exception during search: " + e.getCause() +": " + e.getMessage());
         }
         return new GoogliResponseDTO(songs, counter);
     }

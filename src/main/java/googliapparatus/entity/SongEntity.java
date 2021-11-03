@@ -20,7 +20,7 @@ public class SongEntity {
     @Column(nullable = false)
     private String link;
 
-    @Lob
+    @Column
     private String lyrics;
 
     @Column
