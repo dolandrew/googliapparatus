@@ -45,18 +45,93 @@ public class SongLoader {
 
     @Scheduled(cron="${cron.load.songs}")
     public void loadSongs() throws InterruptedException {
-        googliTweeter.tweet("Checking for new songs to load into GoogliApparatus...");
-        String response = restTemplate.getForObject(PHISH_NET_URL + "/songs", String.class);
+        try {
+            googliTweeter.tweet("Checking for new songs to load into GoogliApparatus...");
+            String response = restTemplate.getForObject(PHISH_NET_URL + "/songs", String.class);
+            int newSongs = processSongs(response);
+            loadStagedSongs();
+
+            googliTweeter.tweet("Finished loading " + newSongs + " new songs.");
+        } catch (Exception e) {
+            googliTweeter.tweet("GoogliApparatus caught exception while loading songs: " + e.getCause());
+        }
+    }
+
+    @Transactional
+    public boolean stageSongIfNew(Element td) throws InterruptedException {
+        String songName = td.wholeText();
+        if (isNotEmpty(songEntityRepository.findAllByName(songName))) {
+            LOG.warn("Skipping " + songName + " because it is already loaded.");
+            return false;
+        }
+        String link = PHISH_NET_URL + td.getElementsByTag("a").attr("href") + "/lyrics";
+        stageSong(songName, link);
+        Thread.sleep(10000);
+        return true;
+    }
+
+    private void stageSong(String songName, String link) {
+        LOG.warn("Processing " + songName + "...");
+        SongEntityStaging songEntity = new SongEntityStaging();
+        songEntity.setId(UUID.randomUUID().toString());
+        songEntity.setLink(link);
+        songEntity.setName(songName);
+        songEntity.setNameLower(songName.toLowerCase());
+        String cleanedLyrics = getCleanedLyrics(songEntity);
+        if (cleanedLyrics != null) {
+            songEntity.setLyrics(cleanedLyrics);
+            songEntity.setLyricsBy(getLyricsBy(cleanedLyrics));
+        }
+
+        LOG.warn("Finished processing " + songName + " successfully.");
+        songEntityStagingRepository.save(songEntity);
+    }
+
+    private String getCleanedLyrics(SongEntityStaging songEntity) {
+        String lyricsResponse = restTemplate.getForObject(songEntity.getLink(), String.class);
+        if (lyricsResponse != null) {
+            Document lyricsDoc = Jsoup.parse(lyricsResponse);
+            Elements blockquotes = lyricsDoc.getElementsByTag("blockquote");
+            if (blockquotes.size() > 0) {
+                Element lyrics = blockquotes.get(0);
+                String cleanLyrics = cleanPreLyricText(lyrics);
+                return removeCreditsFromLyrics(cleanLyrics).toLowerCase();
+            }
+        }
+        return null;
+    }
+
+    private int processSongs(String response) {
         Document doc = Jsoup.parse(response);
         Elements elements = doc.getElementsByTag("tr");
         int allSongs = 1;
         int newSongs = 0;
         songEntityStagingRepository.deleteAll();
         for (Element element : elements.subList(1, elements.size())) {
-            newSongs = processSong(element, newSongs);
-            Thread.sleep(10000);
+            if (processSong(element)) {
+                newSongs++;
+            }
             LOG.warn("...processed " + allSongs++ + " / " + elements.size() + " songs...");
         }
+        return newSongs;
+    }
+
+    private boolean processSong(Element element) {
+        Element td = element.getElementsByTag("td").get(0);
+        String songName = td.wholeText();
+        try {
+            if (stageSongIfNew(td)) {
+                return true;
+            }
+        } catch (Exception e) {
+            googliTweeter.tweet("GoogliApparatus caught exception while loading " + songName + " : " + e.getCause());
+            // continue processing songs
+        }
+
+        return false;
+    }
+
+    private void loadStagedSongs() {
         googliTweeter.tweet("Finished staging new songs successfully. Loading...");
         for (SongEntityStaging song : songEntityStagingRepository.findAll()) {
             SongEntity songEntity = new SongEntity();
@@ -68,46 +143,15 @@ public class SongLoader {
             songEntity.setLyricsBy(song.getLyricsBy());
             songEntityRepository.save(songEntity);
         }
-        googliTweeter.tweet("Finished loading " + newSongs + " new songs.");
     }
 
-    @Transactional
-    public int processSong(Element element, int j) throws InterruptedException {
-        SongEntityStaging songEntity = new SongEntityStaging();
-
-        Element td = element.getElementsByTag("td").get(0);
-        String songName = td.wholeText();
-        if (isNotEmpty(songEntityRepository.findAllByName(songName))) {
-            LOG.warn("Skipping " + songName + " because it is already loaded.");
-            return j;
-        }
-        LOG.warn("Processing " + songName + "...");
-        songEntity.setId(UUID.randomUUID().toString());
-        songEntity.setLink(PHISH_NET_URL + td.getElementsByTag("a").attr("href") + "/lyrics");
-        songEntity.setName(songName);
-        songEntity.setNameLower(songName.toLowerCase());
-
-        String lyricsResponse = restTemplate.getForObject(songEntity.getLink(), String.class);
-        Document lyricsDoc = Jsoup.parse(lyricsResponse);
-        Elements blockquotes = lyricsDoc.getElementsByTag("blockquote");
-        if (blockquotes.size() > 0) {
-            Element lyrics = blockquotes.get(0);
-            String cleanLyrics = cleanPreLyricText(lyrics);
-            setLyricsBy(songEntity, cleanLyrics);
-            songEntity.setLyrics(removeCreditsFromLyrics(cleanLyrics).toLowerCase());
-        }
-        LOG.warn("Finished processing " + songName + " successfully.");
-        songEntityStagingRepository.save(songEntity);
-        return j++;
-    }
-
-    private void setLyricsBy(SongEntityStaging songEntity, String cleanLyrics) {
+    private String getLyricsBy(String cleanLyrics) {
         int openParen = cleanLyrics.indexOf("(");
         int closeParen = cleanLyrics.indexOf(")");
         if (openParen != -1 && closeParen != -1) {
-            String lyricsBy = cleanLyrics.substring(openParen + 1, closeParen);
-            songEntity.setLyricsBy(lyricsBy);
+            return cleanLyrics.substring(openParen + 1, closeParen);
         }
+        return null;
     }
 
     private String cleanPreLyricText(Element lyrics) {
