@@ -1,7 +1,9 @@
 package googliapparatus.service;
 
 import googliapparatus.entity.SongEntity;
+import googliapparatus.entity.SongEntityStaging;
 import googliapparatus.repository.SongEntityRepository;
+import googliapparatus.repository.SongEntityStagingRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -14,7 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
 import java.util.UUID;
 
 import static org.hibernate.internal.util.collections.CollectionHelper.isNotEmpty;
@@ -25,40 +26,62 @@ public class SongLoader {
 
     private final RestTemplate restTemplate;
 
+    private final SongEntityStagingRepository songEntityStagingRepository;
+
     private final SongEntityRepository songEntityRepository;
+
+    private final Tweeter tweeter;
 
     private static final String PHISH_NET_URL = "http://www.phish.net";
 
     private static final Logger LOG = LoggerFactory.getLogger(SongLoader.class);
 
-    public SongLoader(RestTemplate restTemplate, SongEntityRepository songEntityRepository) {
+    public SongLoader(RestTemplate restTemplate, SongEntityStagingRepository songEntityStagingRepository, SongEntityRepository songEntityRepository, Tweeter tweeter) {
         this.restTemplate = restTemplate;
+        this.songEntityStagingRepository = songEntityStagingRepository;
         this.songEntityRepository = songEntityRepository;
+        this.tweeter = tweeter;
     }
 
     @Scheduled(cron="${cron.load.songs}")
     public void loadSongs() throws InterruptedException {
+        tweeter.tweet("Checking for new songs to load into GoogliApparatus...");
         String response = restTemplate.getForObject(PHISH_NET_URL + "/songs", String.class);
         Document doc = Jsoup.parse(response);
         Elements elements = doc.getElementsByTag("tr");
-        int i = 1;
+        int allSongs = 1;
+        int newSongs = 0;
+        songEntityRepository.deleteAll();
         for (Element element : elements.subList(1, elements.size())) {
-            processSong(element);
-            Thread.sleep(15000);
-            LOG.warn("...processed " + i++ + " / " + elements.size() + " songs...");
+            newSongs = processSong(element, newSongs);
+            Thread.sleep(10000);
+            LOG.warn("...processed " + allSongs++ + " / " + elements.size() + " songs...");
+            if (allSongs == 10) break;
         }
-        LOG.warn("Finished processing " + elements.size() + " songs successfully.");
+        tweeter.tweet("Finished processing " + allSongs + " songs successfully. Loading staged songs...");
+        songEntityRepository.deleteAll();
+        for (SongEntityStaging song : songEntityStagingRepository.findAll()) {
+            SongEntity songEntity = new SongEntity();
+            songEntity.setId(song.getId());
+            songEntity.setLink(song.getLink());
+            songEntity.setLyrics(song.getLyrics());
+            songEntity.setName(song.getName());
+            songEntity.setNameLower(song.getNameLower());
+            songEntity.setLyricsBy(song.getLyricsBy());
+            songEntityRepository.save(songEntity);
+        }
+        tweeter.tweet("Finished loding staged songs.");
     }
 
-    @Transactional
-    public void processSong(Element element) throws InterruptedException {
-        SongEntity songEntity = new SongEntity();
+    @Transactional()
+    public int processSong(Element element, int j) throws InterruptedException {
+        SongEntityStaging songEntity = new SongEntityStaging();
 
         Element td = element.getElementsByTag("td").get(0);
         String songName = td.wholeText();
         if (isNotEmpty(songEntityRepository.findAllByName(songName))) {
             LOG.warn("Skipping " + songName + " because it is already loaded.");
-            return;
+            return j;
         }
         LOG.warn("Processing " + songName + "...");
         songEntity.setId(UUID.randomUUID().toString());
@@ -76,10 +99,11 @@ public class SongLoader {
             songEntity.setLyrics(removeCreditsFromLyrics(cleanLyrics).toLowerCase());
         }
         LOG.warn("Finished processing " + songName + " successfully.");
-        songEntityRepository.save(songEntity);
+        songEntityStagingRepository.save(songEntity);
+        return j++;
     }
 
-    private void setLyricsBy(SongEntity songEntity, String cleanLyrics) {
+    private void setLyricsBy(SongEntityStaging songEntity, String cleanLyrics) {
         int openParen = cleanLyrics.indexOf("(");
         int closeParen = cleanLyrics.indexOf(")");
         if (openParen != -1 && closeParen != -1) {
