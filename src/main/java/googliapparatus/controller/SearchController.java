@@ -7,7 +7,7 @@ import googliapparatus.dto.SongDTO;
 import googliapparatus.entity.SongEntity;
 import googliapparatus.helper.SnippetHelper;
 import googliapparatus.repository.SongEntityRepository;
-import googliapparatus.service.Tweeter;
+import googliapparatus.service.GoogliTweeter;
 import oauth.signpost.exception.OAuthCommunicationException;
 import oauth.signpost.exception.OAuthExpectationFailedException;
 import oauth.signpost.exception.OAuthMessageSignerException;
@@ -36,15 +36,15 @@ public class SearchController {
 
     private final SongEntityRepository songEntityRepository;
 
-    private final Tweeter tweeter;
+    private final GoogliTweeter googliTweeter;
 
     private Counter counter = new Counter();
 
     private Logger log = LoggerFactory.getLogger(SearchController.class);
 
-    public SearchController(SongEntityRepository songEntityRepository, Tweeter tweeter) {
+    public SearchController(SongEntityRepository songEntityRepository, GoogliTweeter googliTweeter) {
         this.songEntityRepository = songEntityRepository;
-        this.tweeter = tweeter;
+        this.googliTweeter = googliTweeter;
     }
 
     @Scheduled(fixedDelay = 30000)
@@ -84,9 +84,9 @@ public class SearchController {
             counter.search();
             songs.sort(Comparator.comparing(SongDTO::getName));
 
-            tweeter.tweet("\"" + filter + "\" returned " + songs.size() + " results\n\n" + System.currentTimeMillis());
+            googliTweeter.tweet("\"" + filter + "\" returned " + songs.size() + " results\n\n" + System.currentTimeMillis());
         } catch (Exception e) {
-            tweeter.tweet("GoogliApparatus caught exception during search: " + e.getCause());
+            googliTweeter.tweet("GoogliApparatus caught exception during search: " + e.getCause());
         }
         return new GoogliResponseDTO(songs, counter);
     }

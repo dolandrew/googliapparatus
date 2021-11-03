@@ -30,22 +30,22 @@ public class SongLoader {
 
     private final SongEntityRepository songEntityRepository;
 
-    private final Tweeter tweeter;
+    private final GoogliTweeter googliTweeter;
 
     private static final String PHISH_NET_URL = "http://www.phish.net";
 
     private static final Logger LOG = LoggerFactory.getLogger(SongLoader.class);
 
-    public SongLoader(RestTemplate restTemplate, SongEntityStagingRepository songEntityStagingRepository, SongEntityRepository songEntityRepository, Tweeter tweeter) {
+    public SongLoader(RestTemplate restTemplate, SongEntityStagingRepository songEntityStagingRepository, SongEntityRepository songEntityRepository, GoogliTweeter googliTweeter) {
         this.restTemplate = restTemplate;
         this.songEntityStagingRepository = songEntityStagingRepository;
         this.songEntityRepository = songEntityRepository;
-        this.tweeter = tweeter;
+        this.googliTweeter = googliTweeter;
     }
 
     @Scheduled(cron="${cron.load.songs}")
     public void loadSongs() throws InterruptedException {
-        tweeter.tweet("Checking for new songs to load into GoogliApparatus...");
+        googliTweeter.tweet("Checking for new songs to load into GoogliApparatus...");
         String response = restTemplate.getForObject(PHISH_NET_URL + "/songs", String.class);
         Document doc = Jsoup.parse(response);
         Elements elements = doc.getElementsByTag("tr");
@@ -56,9 +56,8 @@ public class SongLoader {
             newSongs = processSong(element, newSongs);
             Thread.sleep(10000);
             LOG.warn("...processed " + allSongs++ + " / " + elements.size() + " songs...");
-            if (allSongs == 10) break;
         }
-        tweeter.tweet("Finished processing " + allSongs + " songs successfully. Loading staged songs...");
+        googliTweeter.tweet("Finished processing " + allSongs + " songs successfully. Loading staged songs...");
         songEntityRepository.deleteAll();
         for (SongEntityStaging song : songEntityStagingRepository.findAll()) {
             SongEntity songEntity = new SongEntity();
@@ -70,7 +69,7 @@ public class SongLoader {
             songEntity.setLyricsBy(song.getLyricsBy());
             songEntityRepository.save(songEntity);
         }
-        tweeter.tweet("Finished loding staged songs.");
+        googliTweeter.tweet("Finished loading staged songs.");
     }
 
     @Transactional()

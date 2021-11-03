@@ -1,7 +1,7 @@
 package googliapparatus.controller;
 
 import googliapparatus.GoogliApparatusApplication;
-import googliapparatus.service.Tweeter;
+import googliapparatus.service.GoogliTweeter;
 import io.restassured.RestAssured;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +36,7 @@ public class SearchControllerIntegrationTest {
     private int serverPort;
 
     @MockBean
-    private Tweeter tweeter;
+    private GoogliTweeter googliTweeter;
 
     @Before
     public void setup() {
