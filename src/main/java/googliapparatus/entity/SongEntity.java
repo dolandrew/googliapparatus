@@ -3,7 +3,6 @@ package googliapparatus.entity;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.Lob;
 
 @Entity
 public class SongEntity {
@@ -20,7 +19,7 @@ public class SongEntity {
     @Column(nullable = false)
     private String link;
 
-    @Lob
+    @Column
     private String lyrics;
 
     @Column
