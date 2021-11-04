@@ -83,12 +83,28 @@ public class SearchController {
             }
             counter.search();
             songs.sort(Comparator.comparing(SongDTO::getName));
-
-            googliTweeter.tweet("\"" + filter + "\" returned " + songs.size() + " results\n\n" + System.currentTimeMillis());
+            tweetResults(filter, songs);
         } catch (Exception e) {
             googliTweeter.tweet("GoogliApparatus caught exception during search: " + e.getCause() +": " + e.getMessage());
         }
         return new GoogliResponseDTO(songs, counter);
+    }
+
+    private void tweetResults(String filter, List<SongDTO> songs) {
+        String theTweet = "\"" + filter + "\" returned " + songs.size() + " results";
+        if (songs.size() > 0) {
+            theTweet += ":\n" + songs.get(0).getName();
+        }
+        if (songs.size() > 1) {
+            theTweet += "\n" + songs.get(1).getName();
+        }
+        if (songs.size() > 2) {
+            theTweet += "\n" + songs.get(2).getName();
+        }
+        if (songs.size() > 3) {
+            theTweet += "...";
+        }
+        googliTweeter.tweet(theTweet);
     }
 
     private boolean filterIsEmpty(String filter) {
