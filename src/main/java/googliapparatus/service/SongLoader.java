@@ -46,12 +46,12 @@ public class SongLoader {
     @Scheduled(cron="${cron.load.songs}")
     public void loadSongs() throws InterruptedException {
         try {
-            googliTweeter.tweet("Checking for new songs to load into GoogliApparatus...");
+            LOG.warn("Checking for new songs to load...");
             String response = restTemplate.getForObject(PHISH_NET_URL + "/songs", String.class);
             int newSongs = processSongs(response);
             loadStagedSongs();
 
-            googliTweeter.tweet("Finished loading " + newSongs + " new songs.");
+            googliTweeter.tweet("Checked for new songs to load into GoogliApparatus. Found " + newSongs + ".");
         } catch (Exception e) {
             googliTweeter.tweet("GoogliApparatus caught exception while loading songs: " + e.getCause());
         }
@@ -132,7 +132,7 @@ public class SongLoader {
     }
 
     private void loadStagedSongs() {
-        googliTweeter.tweet("Finished staging new songs successfully. Loading...");
+        LOG.warn("Finished staging new songs successfully. Loading...");
         for (SongEntityStaging song : songEntityStagingRepository.findAll()) {
             SongEntity songEntity = new SongEntity();
             songEntity.setId(song.getId());
