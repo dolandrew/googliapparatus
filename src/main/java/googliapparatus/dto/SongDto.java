@@ -6,20 +6,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SongDTO {
-    private String name;
-
+public class SongDto {
     private String link;
 
     private Set<String> lyricSnippets = new HashSet<>();
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
+    private String name;
 
     public String getLink() {
         return link;
@@ -35,5 +27,13 @@ public class SongDTO {
 
     public void setLyricSnippets(Set<String> lyricSnippets) {
         this.lyricSnippets = lyricSnippets;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }
