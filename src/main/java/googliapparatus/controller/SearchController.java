@@ -1,96 +1,97 @@
 package googliapparatus.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import googliapparatus.dto.Counter;
-import googliapparatus.dto.GoogliResponseDTO;
-import googliapparatus.dto.SongDTO;
+import googliapparatus.dto.GoogliResponseDto;
+import googliapparatus.dto.SongDto;
 import googliapparatus.entity.SongEntity;
-import googliapparatus.helper.SnippetHelper;
 import googliapparatus.repository.SongEntityRepository;
 import googliapparatus.service.GoogliTweeter;
+import googliapparatus.service.WordsApiProxyService;
 import oauth.signpost.exception.OAuthCommunicationException;
 import oauth.signpost.exception.OAuthExpectationFailedException;
 import oauth.signpost.exception.OAuthMessageSignerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import static googliapparatus.helper.SnippetHelper.findRelevantLyrics;
 import static java.util.Collections.emptyList;
-import static org.jsoup.internal.StringUtil.isBlank;
+import static java.util.Collections.emptyMap;
 
 @RestController
-@RequestMapping("/api/search")
 @CrossOrigin
-@EnableScheduling
 public class SearchController {
+    private final GoogliTweeter googliTweeter;
+
+    private final Logger log = LoggerFactory.getLogger(SearchController.class);
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final SongEntityRepository songEntityRepository;
 
-    private final GoogliTweeter googliTweeter;
+    private final WordsApiProxyService wordsApiProxyService;
 
-    private Counter counter = new Counter();
-
-    private Logger log = LoggerFactory.getLogger(SearchController.class);
-
-    public SearchController(SongEntityRepository songEntityRepository, GoogliTweeter googliTweeter) {
+    public SearchController(SongEntityRepository songEntityRepository, GoogliTweeter googliTweeter, WordsApiProxyService wordsApiProxyService) {
         this.songEntityRepository = songEntityRepository;
         this.googliTweeter = googliTweeter;
+        this.wordsApiProxyService = wordsApiProxyService;
     }
 
-    @Scheduled(fixedDelay = 30000)
-    public void clearOutOldData() {
-        counter.clearOutOldSessions();
-        counter.clearOutOldSearches();
-    }
-
-    @Scheduled(fixedDelay = 900000)
-    public void logSearchesTodayEveryQuarterHour() {
-        log.info("searches today: " + counter.getSearchesPerDay());
-        log.info("visits today: " + counter.getVisitsToday());
-    }
-
-    @GetMapping("/lyrics")
-    public GoogliResponseDTO searchLyrics(String uuid, String filter) throws OAuthExpectationFailedException, OAuthCommunicationException, OAuthMessageSignerException, IOException {
-        List<SongDTO> songs = new ArrayList<>();
+    @GetMapping("/api/search/lyrics")
+    public GoogliResponseDto searchLyrics(@RequestParam(required = false) String uuid, @RequestParam String filter, @RequestParam(required = false) Boolean similar) throws OAuthExpectationFailedException, OAuthCommunicationException, OAuthMessageSignerException, IOException {
+        if (similar == null) {
+            similar = true;
+        }
+        List<SongDto> songs = new ArrayList<>();
+        Map<String, Integer> similarWordMap = new HashMap<>();
         try {
-            if (isBlank(uuid)) {
-                return new GoogliResponseDTO(emptyList(), counter);
-            }
-            counter.session(uuid);
             if (filterIsEmpty(filter)) {
-                return new GoogliResponseDTO(emptyList(), counter);
+                return new GoogliResponseDto(emptyList(), emptyMap());
             }
             log.info("search term: " + filter);
 
             filter = filter.trim().toLowerCase();
             List<SongEntity> songEntities = songEntityRepository.findByLyricsContainsOrNameLowerContains(filter, filter);
-            SnippetHelper snippetHelper = new SnippetHelper();
-            ObjectMapper objectMapper = new ObjectMapper();
             for (SongEntity songEntity : songEntities) {
-                SongDTO songDTO = objectMapper.convertValue(songEntity, SongDTO.class);
+                SongDto songDTO = objectMapper.convertValue(songEntity, SongDto.class);
                 songs.add(songDTO);
-                snippetHelper.findRelevantLyrics(filter, songEntity, songDTO);
+                findRelevantLyrics(filter, songEntity, songDTO);
             }
-            counter.search();
-            songs.sort(Comparator.comparing(SongDTO::getName));
-            tweetResults(filter, songs);
+            if (songEntities.isEmpty() || similar) {
+                List<String> similarWords = wordsApiProxyService.findSimilarWords(filter);
+                for (String word : similarWords) {
+                    word = word.trim().toLowerCase();
+                    int songCount = songEntityRepository.findByLyricsContainsOrNameLowerContains(word, word).size();
+                    if (songCount > 0) {
+                        similarWordMap.put(word, songCount);
+                    }
+                }
+            }
+            songs.sort(Comparator.comparing(SongDto::getName));
+
+            String finalFilter = filter;
+            ((Runnable) () -> tweetResults(finalFilter, songs)).run();
         } catch (Exception e) {
-            googliTweeter.tweet("GoogliApparatus caught exception during search: " + e.getCause() +": " + e.getMessage());
+            googliTweeter.tweet("GoogliApparatus caught exception during search: " + e.getCause() + ": " + e.getMessage());
         }
-        return new GoogliResponseDTO(songs, counter);
+        return new GoogliResponseDto(songs, similarWordMap);
     }
 
-    private void tweetResults(String filter, List<SongDTO> songs) {
+    private boolean filterIsEmpty(String filter) {
+        return filter == null || filter.equals("");
+    }
+
+    private void tweetResults(String filter, List<SongDto> songs) {
         String theTweet = "\"" + filter + "\" returned " + songs.size() + " results";
         if (songs.size() > 0) {
             theTweet += ":\n" + songs.get(0).getName();
@@ -105,9 +106,5 @@ public class SearchController {
             theTweet += "...";
         }
         googliTweeter.tweet(theTweet);
-    }
-
-    private boolean filterIsEmpty(String filter) {
-        return filter == null || filter == "";
     }
 }
