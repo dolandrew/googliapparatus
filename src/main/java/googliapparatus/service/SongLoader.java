@@ -48,10 +48,8 @@ public class SongLoader {
         try {
             LOG.warn("Checking for new songs to load...");
             String response = restTemplate.getForObject(PHISH_NET_URL + "/songs", String.class);
-            int newSongs = processSongs(response);
+            processSongs(response);
             loadStagedSongs();
-
-            googliTweeter.tweet("Checked for new songs to load into GoogliApparatus. Found " + newSongs + ".");
         } catch (Exception e) {
             googliTweeter.tweet("GoogliApparatus caught exception while loading songs: " + e.getCause());
         }
@@ -101,7 +99,7 @@ public class SongLoader {
         return null;
     }
 
-    private int processSongs(String response) {
+    private void processSongs(String response) {
         Document doc = Jsoup.parse(response);
         Elements elements = doc.getElementsByTag("tr");
         int allSongs = 1;
@@ -113,7 +111,7 @@ public class SongLoader {
             }
             LOG.warn("...processed " + allSongs++ + " / " + elements.size() + " songs...");
         }
-        return newSongs;
+        LOG.warn("Found " + newSongs + ".");
     }
 
     private boolean processSong(Element element) {
@@ -134,6 +132,7 @@ public class SongLoader {
     private void loadStagedSongs() {
         LOG.warn("Finished staging new songs successfully. Loading...");
         for (SongEntityStaging song : songEntityStagingRepository.findAll()) {
+            googliTweeter.tweet("Loaded " + song.getName() + " into the GoogliApparatus");
             SongEntity songEntity = new SongEntity();
             songEntity.setId(song.getId());
             songEntity.setLink(song.getLink());
