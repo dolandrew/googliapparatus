@@ -47,13 +47,7 @@ public class SearchController {
     }
 
     @GetMapping("/api/search/lyrics")
-    public GoogliResponseDto searchLyrics(@RequestParam(required = false) String uuid, @RequestParam String filter, @RequestParam(required = false) Boolean similar, @RequestParam(required = false) Boolean wholeWord) throws OAuthExpectationFailedException, OAuthCommunicationException, OAuthMessageSignerException, IOException {
-        if (similar == null) {
-            similar = true;
-        }
-        if (wholeWord == null) {
-            wholeWord = false;
-        }
+    public GoogliResponseDto searchLyrics(@RequestParam String filter, @RequestParam(required = false, defaultValue = "true") Boolean similar, @RequestParam(required = false) boolean wholeWord) throws OAuthExpectationFailedException, OAuthCommunicationException, OAuthMessageSignerException, IOException {
         List<SongDto> songs = new ArrayList<>();
         List<SimilarResult> similarResults = new ArrayList<>();
         try {
