@@ -37,20 +37,83 @@ import static org.junit.Assert.assertEquals;
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
 public class SearchControllerIntegrationTest {
+    @MockBean
+    private GoogliTweeter googliTweeter;
 
     @LocalServerPort
     private int serverPort;
 
-    @MockBean
-    private GoogliTweeter googliTweeter;
-
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    public <T> T executeInTransaction(TransactionCallback<T> callBack) {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
+        return template.execute(callBack);
+    }
 
     @Before
     public void setup() {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         RestAssured.port = serverPort;
+    }
+
+    @Test
+    public void testSearchLyrics_emptyFilter() {
+        executeInTransaction(transactionStatus -> {
+            with().queryParam("filter", "")
+                    .queryParam("uuid", "some-uuid")
+                    .expect().statusCode(200)
+                    .body("songs.size()", is(0))
+                    .when().get("/api/search/lyrics");
+            return null;
+        });
+    }
+
+    @Test
+    public void testSearchLyrics_filterContainsSpaces() {
+        executeInTransaction(transactionStatus -> {
+            with().queryParam("filter", " land ")
+                    .queryParam("uuid", "some-uuid")
+                    .expect().statusCode(200)
+                    .and().body("songs.name",
+                            hasItems("The Lizards", "Esther", "The Mango Song", "Roses Are Free", "Limb By Limb", "Sand"))
+                    .body("songs.size()", is(56))
+                    .body("songs.link", everyItem(is(notNullValue())))
+                    .body("songs.name", everyItem(is(notNullValue())))
+                    .body("songs.lyricSnippets", hasItem(containsInAnyOrder("earthward till she <b>land</b>ed in the nasty part...")))
+                    .when().get("/api/search/lyrics");
+            return null;
+        });
+    }
+
+    @Test
+    public void testSearchLyrics_filterIsNotCaseSensitive() {
+        executeInTransaction(transactionStatus -> {
+            with().queryParam("filter", "LaNd")
+                    .queryParam("uuid", "some-uuid")
+                    .expect().statusCode(200)
+                    .and().body("songs.name",
+                            hasItems("The Lizards", "Esther", "The Mango Song", "Roses Are Free", "Limb By Limb", "Sand"))
+                    .body("songs.size()", is(56))
+                    .body("songs.link", everyItem(is(notNullValue())))
+                    .body("songs.name", everyItem(is(notNullValue())))
+                    .body("songs.lyricSnippets", hasItems(containsInAnyOrder("earthward till she <b>land</b>ed in the nasty part..."),
+                            containsInAnyOrder("to his knees, sees s<b>land</b>er on wrap paper tie..."),
+                            containsInAnyOrder("car and cruise the <b>land</b> of the brave and fr...")))
+                    .when().get("/api/search/lyrics");
+            return null;
+        });
+    }
+
+    @Test
+    public void testSearchLyrics_hashtagNoFilter() {
+        executeInTransaction(transactionStatus -> {
+            expect().statusCode(400)
+                    .body("message", is("Required String parameter 'filter' is not present"))
+                    .when().get("/api/search/lyrics");
+            return null;
+        });
     }
 
     @Test
@@ -74,25 +137,6 @@ public class SearchControllerIntegrationTest {
     }
 
     @Test
-    public void testSearchLyrics_filterIsNotCaseSensitive() {
-        executeInTransaction(transactionStatus -> {
-            with().queryParam("filter", "LaNd")
-                    .queryParam("uuid", "some-uuid")
-                    .expect().statusCode(200)
-                    .and().body("songs.name",
-                    hasItems("The Lizards", "Esther", "The Mango Song", "Roses Are Free", "Limb By Limb", "Sand"))
-                    .body("songs.size()", is(56))
-                    .body("songs.link", everyItem(is(notNullValue())))
-                    .body("songs.name", everyItem(is(notNullValue())))
-                    .body("songs.lyricSnippets", hasItems(containsInAnyOrder("earthward till she <b>land</b>ed in the nasty part..."),
-                            containsInAnyOrder("to his knees, sees s<b>land</b>er on wrap paper tie..."),
-                            containsInAnyOrder("car and cruise the <b>land</b> of the brave and fr...")))
-                    .when().get("/api/search/lyrics");
-            return null;
-        });
-    }
-
-    @Test
     public void testSearchLyrics_withFilterPhrase() {
         executeInTransaction(transactionStatus -> {
             with().queryParam("filter", "bereft of oar")
@@ -104,6 +148,23 @@ public class SearchControllerIntegrationTest {
                     .body("songs.name", everyItem(is(notNullValue())))
                     .body("songs.lyricSnippets", hasItems(contains("aboard a craft <b>bereft of oar</b> I rowed upstream to...")))
                     .when().get("/api/search/lyrics");
+            return null;
+        });
+    }
+
+    @Test
+    public void testSearchLyrics_withFilter_resultsAreAlphabetical() {
+        executeInTransaction(transactionStatus -> {
+            LinkedHashMap response = with().queryParam("filter", "will")
+                    .queryParam("uuid", "some-uuid")
+                    .expect().statusCode(200)
+                    .body("songs.size()", is(110))
+                    .body("songs.link", everyItem(is(notNullValue())))
+                    .body("songs.name", everyItem(is(notNullValue())))
+                    .when().get("/api/search/lyrics").thenReturn().as(LinkedHashMap.class);
+            assertEquals("20-20 Vision", ((LinkedHashMap) ((List) response.get("songs")).get(0)).get("name"));
+            assertEquals("All of These Dreams", ((LinkedHashMap) ((List) response.get("songs")).get(1)).get("name"));
+            assertEquals("Amazing Grace", ((LinkedHashMap) ((List) response.get("songs")).get(2)).get("name"));
             return null;
         });
     }
@@ -121,67 +182,5 @@ public class SearchControllerIntegrationTest {
                     .when().get("/api/search/lyrics");
             return null;
         });
-    }
-
-    @Test
-    public void testSearchLyrics_withFilter_resultsAreAlphabetical() {
-        executeInTransaction(transactionStatus -> {
-            LinkedHashMap response = with().queryParam("filter", "will")
-                    .queryParam("uuid", "some-uuid")
-                    .expect().statusCode(200)
-                    .body("songs.size()", is(110))
-                    .body("songs.link", everyItem(is(notNullValue())))
-                    .body("songs.name", everyItem(is(notNullValue())))
-                    .when().get("/api/search/lyrics").thenReturn().as(LinkedHashMap.class);
-            assertEquals("20-20 Vision", ((LinkedHashMap)((List)response.get("songs")).get(0)).get("name"));
-            assertEquals("All of These Dreams", ((LinkedHashMap)((List)response.get("songs")).get(1)).get("name"));
-            assertEquals("Amazing Grace", ((LinkedHashMap)((List)response.get("songs")).get(2)).get("name"));
-            return null;
-        });
-    }
-
-    @Test
-    public void testSearchLyrics_filterContainsSpaces() {
-        executeInTransaction(transactionStatus -> {
-            with().queryParam("filter", " land ")
-                    .queryParam("uuid", "some-uuid")
-                    .expect().statusCode(200)
-                    .and().body("songs.name",
-                    hasItems("The Lizards", "Esther", "The Mango Song", "Roses Are Free", "Limb By Limb", "Sand"))
-                    .body("songs.size()", is(56))
-                    .body("songs.link", everyItem(is(notNullValue())))
-                    .body("songs.name", everyItem(is(notNullValue())))
-                    .body("songs.lyricSnippets", hasItem(containsInAnyOrder("earthward till she <b>land</b>ed in the nasty part...")))
-                    .when().get("/api/search/lyrics");
-            return null;
-        });
-    }
-
-    @Test
-    public void testSearchLyrics_emptyFilter() {
-        executeInTransaction(transactionStatus -> {
-            with().queryParam("filter", "")
-                    .queryParam("uuid", "some-uuid")
-                    .expect().statusCode(200)
-                    .body("songs.size()", is(0))
-                    .when().get("/api/search/lyrics");
-            return null;
-        });
-    }
-
-    @Test
-    public void testSearchLyrics_hashtagNoFilter() {
-        executeInTransaction(transactionStatus -> {
-            expect().statusCode(200)
-                    .body("songs.size()", is(0))
-                    .when().get("/api/search/lyrics");
-            return null;
-        });
-    }
-
-    public <T> T executeInTransaction(TransactionCallback<T> callBack) {
-        TransactionTemplate template = new TransactionTemplate(transactionManager);
-        template.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
-        return template.execute(callBack);
     }
 }
