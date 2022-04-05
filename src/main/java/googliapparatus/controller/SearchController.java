@@ -46,7 +46,7 @@ public class SearchController {
         this.wordsApiProxyService = wordsApiProxyService;
     }
 
-    @GetMapping("/api/search/lyrics")
+    @GetMapping(path = "/api/search/lyrics", produces = "application/json")
     public GoogliResponseDto searchLyrics(@RequestParam String filter, @RequestParam(required = false, defaultValue = "true") Boolean similar, @RequestParam(required = false) boolean wholeWord) throws OAuthExpectationFailedException, OAuthCommunicationException, OAuthMessageSignerException, IOException {
         List<SongDto> songs = new ArrayList<>();
         List<SimilarResult> similarResults = new ArrayList<>();
