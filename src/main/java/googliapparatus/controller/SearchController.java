@@ -66,25 +66,28 @@ public class SearchController {
                 songs.add(songDTO);
                 findRelevantLyrics(filter, songEntity, songDTO);
             }
-            if (songEntities.isEmpty() || similar) {
-                Set<String> similarWords = wordsApiProxyService.findSimilarWords(filter);
-                for (String word : similarWords) {
-                    word = word.trim().toLowerCase();
-                    int songCount = songEntityRepository.findByLyricsContainsOrNameLowerContains(word, word).size();
-                    if (songCount > 0) {
-                        similarResults.add(new SimilarResult(songCount, word));
-                    }
-                }
-            }
+            addSimilarResults(filter, similar, similarResults, songEntities);
             songs.sort(comparing(SongDto::getName));
             similarResults.sort(comparing(SimilarResult::getCount).reversed());
 
-            String finalFilter = filter;
-            ((Runnable) () -> tweetResults(finalFilter, songs)).run();
+            tweetResultsAsync(filter, songs);
         } catch (Exception e) {
             googliTweeter.tweet("GoogliApparatus caught exception during search: " + e.getCause() + ": " + e.getMessage());
         }
         return new GoogliResponseDto(songs, similarResults);
+    }
+
+    private void addSimilarResults(String filter, Boolean similar, List<SimilarResult> similarResults, List<SongEntity> songEntities) {
+        if (songEntities.isEmpty() || similar) {
+            Set<String> similarWords = wordsApiProxyService.findSimilarWords(filter);
+            for (String word : similarWords) {
+                word = word.trim().toLowerCase();
+                int songCount = songEntityRepository.findByLyricsContainsOrNameLowerContains(word, word).size();
+                if (songCount > 0) {
+                    similarResults.add(new SimilarResult(songCount, word));
+                }
+            }
+        }
     }
 
     private boolean filterIsEmpty(String filter) {
@@ -106,5 +109,9 @@ public class SearchController {
             theTweet += "...";
         }
         googliTweeter.tweet(theTweet);
+    }
+
+    private void tweetResultsAsync(String filter, List<SongDto> songs) {
+        ((Runnable) () -> tweetResults(filter, songs)).run();
     }
 }

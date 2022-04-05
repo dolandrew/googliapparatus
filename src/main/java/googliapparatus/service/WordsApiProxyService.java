@@ -33,7 +33,7 @@ public class WordsApiProxyService {
             query = query.replaceAll("\"", "");
             HttpHeaders headers = new HttpHeaders();
             headers.add("X-RapidAPI-Host", "wordsapiv1.p.rapidapi.com");
-            headers.add("X-RapidAPI-Key", "5bbfaec07amsh687a8d6af42b63fp1fca43jsne4a81f454fa2");
+            headers.add("X-RapidAPI-Key", wordsApiConfig.getApiKey());
             String url = "https://wordsapiv1.p.rapidapi.com/words/" + query;
             HttpEntity<Object> requestEntity = new HttpEntity<>(headers);
             var response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, LinkedHashMap.class);
