@@ -6,9 +6,17 @@ import javax.persistence.Id;
 
 @Entity
 public class SongEntity {
-
     @Id
     private String id;
+
+    @Column(nullable = false)
+    private String link;
+
+    @Column(length = 10485760)
+    private String lyrics;
+
+    @Column
+    private String lyricsBy;
 
     @Column(nullable = false)
     private String name;
@@ -16,21 +24,12 @@ public class SongEntity {
     @Column(nullable = false)
     private String nameLower;
 
-    @Column(nullable = false)
-    private String link;
-
-    @Column
-    private String lyrics;
-
-    @Column
-    private String lyricsBy;
-
-    public String getName() {
-        return name;
+    public String getId() {
+        return id;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getLink() {
@@ -41,28 +40,12 @@ public class SongEntity {
         this.link = link;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getNameLower() {
-        return nameLower;
-    }
-
-    public void setNameLower(String nameLower) {
-        this.nameLower = nameLower;
+    public String getLyrics() {
+        return lyrics;
     }
 
     public void setLyrics(String lyrics) {
         this.lyrics = lyrics;
-    }
-
-    public String getLyrics() {
-        return lyrics;
     }
 
     public String getLyricsBy() {
@@ -71,5 +54,21 @@ public class SongEntity {
 
     public void setLyricsBy(String lyricsBy) {
         this.lyricsBy = lyricsBy;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getNameLower() {
+        return nameLower;
+    }
+
+    public void setNameLower(String nameLower) {
+        this.nameLower = nameLower;
     }
 }
