@@ -30,6 +30,7 @@ public class WordsApiProxyService {
 
     public Set<String> findSimilarWords(String query) {
         try {
+            query = query.replaceAll("\"", "");
             HttpHeaders headers = new HttpHeaders();
             headers.add("X-RapidAPI-Host", "wordsapiv1.p.rapidapi.com");
             headers.add("X-RapidAPI-Key", "5bbfaec07amsh687a8d6af42b63fp1fca43jsne4a81f454fa2");
