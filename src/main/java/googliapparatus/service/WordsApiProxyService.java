@@ -7,11 +7,12 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
-import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 
 @Service
 public class WordsApiProxyService {
@@ -27,7 +28,7 @@ public class WordsApiProxyService {
         this.wordsApiConfig = wordsApiConfig;
     }
 
-    public List<String> findSimilarWords(String query) {
+    public Set<String> findSimilarWords(String query) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.add("X-RapidAPI-Host", "wordsapiv1.p.rapidapi.com");
@@ -35,7 +36,7 @@ public class WordsApiProxyService {
             String url = "https://wordsapiv1.p.rapidapi.com/words/" + query;
             HttpEntity<Object> requestEntity = new HttpEntity<>(headers);
             var response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, LinkedHashMap.class);
-            List<String> list = new ArrayList<>();
+            Set<String> list = new HashSet<>();
             List<LinkedHashMap> results = (List<LinkedHashMap>) response.getBody().get("results");
             for (LinkedHashMap result : results) {
                 extracted(list, result, "similarTo");
@@ -44,14 +45,15 @@ public class WordsApiProxyService {
                 extracted(list, result, "also");
                 extracted(list, result, "hasParts");
             }
+            list.remove(query);
             return list;
         } catch (Exception e) {
             googliTweeter.tweet("GoogliApparatus caught exception from WordsAPI: " + e.getCause());
-            return emptyList();
+            return emptySet();
         }
     }
 
-    private void extracted(List<String> list, LinkedHashMap result, String key) {
+    private void extracted(Set<String> list, LinkedHashMap result, String key) {
         List<String> words = (List<String>) result.get(key);
         if (words != null) {
             list.addAll(words);

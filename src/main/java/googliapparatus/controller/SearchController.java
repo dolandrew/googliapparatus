@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static googliapparatus.helper.SnippetHelper.findRelevantLyrics;
 import static java.util.Collections.emptyList;
@@ -66,7 +67,7 @@ public class SearchController {
                 findRelevantLyrics(filter, songEntity, songDTO);
             }
             if (songEntities.isEmpty() || similar) {
-                List<String> similarWords = wordsApiProxyService.findSimilarWords(filter);
+                Set<String> similarWords = wordsApiProxyService.findSimilarWords(filter);
                 for (String word : similarWords) {
                     word = word.trim().toLowerCase();
                     int songCount = songEntityRepository.findByLyricsContainsOrNameLowerContains(word, word).size();
