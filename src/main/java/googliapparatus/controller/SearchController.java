@@ -47,9 +47,12 @@ public class SearchController {
     }
 
     @GetMapping("/api/search/lyrics")
-    public GoogliResponseDto searchLyrics(@RequestParam(required = false) String uuid, @RequestParam String filter, @RequestParam(required = false) Boolean similar) throws OAuthExpectationFailedException, OAuthCommunicationException, OAuthMessageSignerException, IOException {
+    public GoogliResponseDto searchLyrics(@RequestParam(required = false) String uuid, @RequestParam String filter, @RequestParam(required = false) Boolean similar, @RequestParam(required = false) Boolean wholeWord) throws OAuthExpectationFailedException, OAuthCommunicationException, OAuthMessageSignerException, IOException {
         if (similar == null) {
             similar = true;
+        }
+        if (wholeWord == null) {
+            wholeWord = false;
         }
         List<SongDto> songs = new ArrayList<>();
         List<SimilarResult> similarResults = new ArrayList<>();
@@ -60,6 +63,9 @@ public class SearchController {
             log.info("search term: " + filter);
 
             filter = filter.trim().toLowerCase();
+            if (wholeWord) {
+                filter = " " + filter + " ";
+            }
             List<SongEntity> songEntities = songEntityRepository.findByLyricsContainsOrNameLowerContains(filter, filter);
             for (SongEntity songEntity : songEntities) {
                 SongDto songDTO = objectMapper.convertValue(songEntity, SongDto.class);
