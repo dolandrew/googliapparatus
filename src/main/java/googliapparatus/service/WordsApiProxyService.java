@@ -41,7 +41,6 @@ public class WordsApiProxyService {
                 extracted(list, result, "similarTo");
                 extracted(list, result, "typeOf");
                 extracted(list, result, "pertainsTo");
-                extracted(list, result, "pertainsTo");
                 extracted(list, result, "also");
                 extracted(list, result, "hasParts");
             }
