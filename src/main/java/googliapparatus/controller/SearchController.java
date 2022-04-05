@@ -2,6 +2,7 @@ package googliapparatus.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import googliapparatus.dto.GoogliResponseDto;
+import googliapparatus.dto.SimilarResult;
 import googliapparatus.dto.SongDto;
 import googliapparatus.entity.SongEntity;
 import googliapparatus.repository.SongEntityRepository;
@@ -19,14 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static googliapparatus.helper.SnippetHelper.findRelevantLyrics;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
+import static java.util.Comparator.comparing;
 
 @RestController
 @CrossOrigin
@@ -53,10 +51,10 @@ public class SearchController {
             similar = true;
         }
         List<SongDto> songs = new ArrayList<>();
-        Map<String, Integer> similarWordMap = new HashMap<>();
+        List<SimilarResult> similarResults = new ArrayList<>();
         try {
             if (filterIsEmpty(filter)) {
-                return new GoogliResponseDto(emptyList(), emptyMap());
+                return new GoogliResponseDto(emptyList(), emptyList());
             }
             log.info("search term: " + filter);
 
@@ -73,18 +71,19 @@ public class SearchController {
                     word = word.trim().toLowerCase();
                     int songCount = songEntityRepository.findByLyricsContainsOrNameLowerContains(word, word).size();
                     if (songCount > 0) {
-                        similarWordMap.put(word, songCount);
+                        similarResults.add(new SimilarResult(songCount, word));
                     }
                 }
             }
-            songs.sort(Comparator.comparing(SongDto::getName));
+            songs.sort(comparing(SongDto::getName));
+            similarResults.sort(comparing(SimilarResult::getCount).reversed());
 
             String finalFilter = filter;
             ((Runnable) () -> tweetResults(finalFilter, songs)).run();
         } catch (Exception e) {
             googliTweeter.tweet("GoogliApparatus caught exception during search: " + e.getCause() + ": " + e.getMessage());
         }
-        return new GoogliResponseDto(songs, similarWordMap);
+        return new GoogliResponseDto(songs, similarResults);
     }
 
     private boolean filterIsEmpty(String filter) {
