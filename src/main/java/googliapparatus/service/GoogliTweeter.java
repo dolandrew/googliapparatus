@@ -1,6 +1,7 @@
 package googliapparatus.service;
 
 import googliapparatus.GoogliConfig;
+import googliapparatus.dto.SongDto;
 import oauth.signpost.OAuthConsumer;
 import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
 import org.apache.http.client.HttpClient;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.util.List;
 
 @Service
 public class GoogliTweeter {
@@ -48,6 +50,23 @@ public class GoogliTweeter {
         String failureMessage = "Error trying to tweet: \"" + tweet + "\".";
 
         post(url, null, failureMessage, apiKey, apiKeySecret, accessToken, accessTokenSecret, tweet);
+    }
+
+    public void tweetResults(String filter, List<SongDto> songs) {
+        String tweet = "\"" + filter + "\" returned " + songs.size() + " results";
+        if (songs.size() > 0) {
+            tweet += ":\n" + songs.get(0).getName();
+        }
+        if (songs.size() > 1) {
+            tweet += "\n" + songs.get(1).getName();
+        }
+        if (songs.size() > 2) {
+            tweet += "\n" + songs.get(2).getName();
+        }
+        if (songs.size() > 3) {
+            tweet += "...";
+        }
+        tweet(tweet);
     }
 
     private void post(String url, String successMessage, String failureMessage, String apiKey, String apiKeySecret, String accessToken, String accessTokenSecret, String tweet) {

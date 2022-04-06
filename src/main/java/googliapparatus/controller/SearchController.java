@@ -5,9 +5,9 @@ import googliapparatus.dto.GoogliResponseDto;
 import googliapparatus.dto.SimilarResult;
 import googliapparatus.dto.SongDto;
 import googliapparatus.entity.SongEntity;
-import googliapparatus.repository.SongEntityRepository;
 import googliapparatus.service.GoogliTweeter;
-import googliapparatus.service.WordsApiProxyService;
+import googliapparatus.service.QueryService;
+import googliapparatus.service.SimilarResultsService;
 import oauth.signpost.exception.OAuthCommunicationException;
 import oauth.signpost.exception.OAuthExpectationFailedException;
 import oauth.signpost.exception.OAuthMessageSignerException;
@@ -21,10 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static googliapparatus.helper.SnippetHelper.findRelevantLyrics;
-import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 
 @RestController
@@ -36,14 +34,14 @@ public class SearchController {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private final SongEntityRepository songEntityRepository;
+    private final QueryService queryService;
 
-    private final WordsApiProxyService wordsApiProxyService;
+    private final SimilarResultsService similarResultsService;
 
-    public SearchController(SongEntityRepository songEntityRepository, GoogliTweeter googliTweeter, WordsApiProxyService wordsApiProxyService) {
-        this.songEntityRepository = songEntityRepository;
+    public SearchController(GoogliTweeter googliTweeter, QueryService queryService, SimilarResultsService similarResultsService) {
+        this.queryService = queryService;
         this.googliTweeter = googliTweeter;
-        this.wordsApiProxyService = wordsApiProxyService;
+        this.similarResultsService = similarResultsService;
     }
 
     @GetMapping(path = "/api/search/lyrics", produces = "application/json")
@@ -52,7 +50,7 @@ public class SearchController {
         List<SimilarResult> similarResults = new ArrayList<>();
         try {
             if (filterIsEmpty(filter)) {
-                return new GoogliResponseDto(emptyList(), emptyList());
+                return new GoogliResponseDto(songs, similarResults);
             }
             log.info("search term: " + filter);
 
@@ -60,14 +58,15 @@ public class SearchController {
             if (wholeWord) {
                 filter = " " + filter + " ";
             }
-            List<SongEntity> songEntities = songEntityRepository.findByLyricsContainsOrNameLowerContains(filter, filter);
+            List<SongEntity> songEntities = queryService.query(filter);
             for (SongEntity songEntity : songEntities) {
                 SongDto songDTO = objectMapper.convertValue(songEntity, SongDto.class);
                 songs.add(songDTO);
                 findRelevantLyrics(filter, songEntity, songDTO);
             }
-            addSimilarResults(filter, similar, similarResults, songEntities);
             songs.sort(comparing(SongDto::getName));
+
+            similarResults.addAll(similarResultsService.getSimilarResults(filter));
             similarResults.sort(comparing(SimilarResult::getCount).reversed());
 
             tweetResultsAsync(filter, songs);
@@ -77,41 +76,11 @@ public class SearchController {
         return new GoogliResponseDto(songs, similarResults);
     }
 
-    private void addSimilarResults(String filter, Boolean similar, List<SimilarResult> similarResults, List<SongEntity> songEntities) {
-        if (songEntities.isEmpty() || similar) {
-            Set<String> similarWords = wordsApiProxyService.findSimilarWords(filter);
-            for (String word : similarWords) {
-                word = word.trim().toLowerCase();
-                int songCount = songEntityRepository.findByLyricsContainsOrNameLowerContains(word, word).size();
-                if (songCount > 0) {
-                    similarResults.add(new SimilarResult(songCount, word));
-                }
-            }
-        }
-    }
-
     private boolean filterIsEmpty(String filter) {
         return filter == null || filter.equals("");
     }
 
-    private void tweetResults(String filter, List<SongDto> songs) {
-        String theTweet = "\"" + filter + "\" returned " + songs.size() + " results";
-        if (songs.size() > 0) {
-            theTweet += ":\n" + songs.get(0).getName();
-        }
-        if (songs.size() > 1) {
-            theTweet += "\n" + songs.get(1).getName();
-        }
-        if (songs.size() > 2) {
-            theTweet += "\n" + songs.get(2).getName();
-        }
-        if (songs.size() > 3) {
-            theTweet += "...";
-        }
-        googliTweeter.tweet(theTweet);
-    }
-
     private void tweetResultsAsync(String filter, List<SongDto> songs) {
-        ((Runnable) () -> tweetResults(filter, songs)).run();
+        ((Runnable) () -> googliTweeter.tweetResults(filter, songs)).run();
     }
 }
