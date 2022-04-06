@@ -1,15 +1,3 @@
-CREATE TABLE IF NOT EXISTS song_entity (
-  id              VARCHAR(255) NOT NULL,
-  name            VARCHAR(255) NOT NULL,
-  name_lower      VARCHAR(255) NOT NULL,
-  link            VARCHAR(255) NOT NULL,
-  lyrics          VARCHAR(10485760),
-  lyrics_by       VARCHAR(255),
-  PRIMARY KEY (id)
-);
-
-DELETE FROM song_entity WHERE 1=1;
-
 INSERT INTO song_entity (id, name, name_lower, link, lyrics, lyrics_by) VALUES ('c3d86df1-6b7a-4a8b-b79f-bb3c9cf5878b', 'And So To Bed', 'and so to bed', 'http://www.phish.net/song/and-so-to-bed/lyrics', null, null);
 INSERT INTO song_entity (id, name, name_lower, link, lyrics, lyrics_by) VALUES ('c13abbb8-3eb7-4d93-9842-de4d35a8e746', 'You Enjoy Myself', 'you enjoy myself', 'http://www.phish.net/song/you-enjoy-myself/lyrics', '  boy man god shit wash uffizi drive me to firenze ', 'Anastasio');
 INSERT INTO song_entity (id, name, name_lower, link, lyrics, lyrics_by) VALUES ('dc67329d-0b0e-45b0-a21c-48c7723ac369', 'AC/DC Bag', 'ac/dc bag', 'http://www.phish.net/song/acdc-bag/lyrics', '  mr. palmer is concerned with the thousand dollar question just like roger, he''s a crazy little kid i''ve got the time, if you''ve got the inclination so cheer up palmer, you''ll soon be dead the noose is hanging, at least you won''t die wondering sit up and take notice, tell like it is if i were near you, i wouldn''t be far from you i''ve got a feeling, you know what you did ac/dc bag ac/dc bag ac/dc bag dc bag time to put your money where your mouth is put ''em in a field and let ''em fight it out i''m running so fast my feet don''t touch the ground i''m a stranger here, i''m going down let''s get down to the nitty gritty let''s get this show on the road i''ll show you mine if you show me yours i''m breathing hard open the door ac/dc bag ac/dc bag ac/dc bag dc bag brain dead and made of money no future at all pull down the blinds and run for cover no future at all who would''ve thought it, that''s where i am no future at all don''t sweat it, that''s where i am oh, carry me down ', 'Anastasio');

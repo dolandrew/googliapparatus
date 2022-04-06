@@ -1,11 +1,13 @@
 package googliapparatus.repository;
 
 import googliapparatus.entity.SongEntity;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface SongEntityRepository extends CrudRepository<SongEntity, String> {
+public interface SongEntityRepository extends JpaRepository<SongEntity, String> {
     List<SongEntity> findAllByName(String name);
-    List<SongEntity> findByLyricsContainsOrNameLowerContains(String lyrics, String nameLower);
+
+    List<SongEntity> findByLyricsContainsOrNameLowerContains(@Param("lyrics") String lyrics, @Param("nameLower") String nameLower);
 }
