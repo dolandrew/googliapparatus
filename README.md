@@ -1,3 +1,5 @@
+www.googliapparatus.com
+
 # Googli Apparatus Backend
 
 A searchable database of phish lyrics
@@ -16,5 +18,3 @@ docker run googliapparatus
 mvn clean install
 mvn spring-boot:run
 ```
-
-* Merges to the master branch are deployed to docker hub.
