@@ -2,6 +2,7 @@ package googliapparatus.controller;
 
 import googliapparatus.GoogliApparatusApplication;
 import googliapparatus.service.GoogliTweeter;
+import googliapparatus.service.SongLoader;
 import io.restassured.RestAssured;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,14 +44,11 @@ public class SearchControllerIntegrationTest {
     @LocalServerPort
     private int serverPort;
 
+    @MockBean
+    private SongLoader songLoader;
+
     @Autowired
     private PlatformTransactionManager transactionManager;
-
-    public <T> T executeInTransaction(TransactionCallback<T> callBack) {
-        TransactionTemplate template = new TransactionTemplate(transactionManager);
-        template.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
-        return template.execute(callBack);
-    }
 
     @Before
     public void setup() {
@@ -182,5 +180,11 @@ public class SearchControllerIntegrationTest {
                     .when().get("/api/search/lyrics");
             return null;
         });
+    }
+
+    private <T> T executeInTransaction(TransactionCallback<T> callBack) {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
+        return template.execute(callBack);
     }
 }
