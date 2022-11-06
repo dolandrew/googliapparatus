@@ -59,13 +59,13 @@ public class GoogliTweeter {
             HttpClient httpClient = new DefaultHttpClient();
             if (localEnvironment()) {
                 if (tweet != null) {
-                    LOG.warn("Would have tweeted: " + tweet);
+                    LOG.info("Would have tweeted: " + tweet);
                 }
                 return;
             }
             httpClient.execute(httpPost);
             if (successMessage != null) {
-                LOG.warn(successMessage);
+                LOG.info(successMessage);
             }
         } catch (Exception e) {
             LOG.error(failureMessage, e);

@@ -2,4 +2,10 @@
 /target/
 *.iml
 
+newrelic
+
+gradle
+
+build
+
 application-local.properties

@@ -1,9 +1,7 @@
 package googliapparatus.service;
 
 import googliapparatus.entity.SongEntity;
-import googliapparatus.entity.SongEntityStaging;
 import googliapparatus.repository.SongEntityRepository;
-import googliapparatus.repository.SongEntityStagingRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -16,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.hibernate.internal.util.collections.CollectionHelper.isNotEmpty;
@@ -26,8 +25,6 @@ public class SongLoader {
 
     private final RestTemplate restTemplate;
 
-    private final SongEntityStagingRepository songEntityStagingRepository;
-
     private final SongEntityRepository songEntityRepository;
 
     private final GoogliTweeter googliTweeter;
@@ -36,41 +33,37 @@ public class SongLoader {
 
     private static final Logger LOG = LoggerFactory.getLogger(SongLoader.class);
 
-    public SongLoader(RestTemplate restTemplate, SongEntityStagingRepository songEntityStagingRepository, SongEntityRepository songEntityRepository, GoogliTweeter googliTweeter) {
+    public SongLoader(RestTemplate restTemplate, SongEntityRepository songEntityRepository, GoogliTweeter googliTweeter) {
         this.restTemplate = restTemplate;
-        this.songEntityStagingRepository = songEntityStagingRepository;
         this.songEntityRepository = songEntityRepository;
         this.googliTweeter = googliTweeter;
     }
 
     @Scheduled(cron="${cron.load.songs}")
-    public void loadSongs() throws InterruptedException {
+    @Transactional
+    public void loadSongs() {
         try {
-            LOG.warn("Checking for new songs to load...");
+            LOG.info("Checking for new songs to load...");
             String response = restTemplate.getForObject(PHISH_NET_URL + "/songs", String.class);
             processSongs(response);
-            loadStagedSongs();
         } catch (Exception e) {
             googliTweeter.tweet("GoogliApparatus caught exception while loading songs: " + e.getCause());
         }
     }
 
-    @Transactional
-    public boolean stageSongIfNew(Element td) throws InterruptedException {
+    private void addSongIfNew(Element td) throws InterruptedException {
         String songName = td.wholeText();
         if (isNotEmpty(songEntityRepository.findAllByName(songName))) {
-            LOG.warn("Skipping " + songName + " because it is already loaded.");
-            return false;
+            LOG.info("Skipping " + songName + " because it is already loaded.");
+            return;
         }
         String link = PHISH_NET_URL + td.getElementsByTag("a").attr("href") + "/lyrics";
-        stageSong(songName, link);
+        saveSong(songName, link);
         Thread.sleep(10000);
-        return true;
     }
 
-    private void stageSong(String songName, String link) {
-        LOG.warn("Processing " + songName + "...");
-        SongEntityStaging songEntity = new SongEntityStaging();
+    private void saveSong(String songName, String link) {
+        SongEntity songEntity = new SongEntity();
         songEntity.setId(UUID.randomUUID().toString());
         songEntity.setLink(link);
         songEntity.setName(songName);
@@ -81,11 +74,11 @@ public class SongLoader {
             songEntity.setLyricsBy(getLyricsBy(cleanedLyrics));
         }
 
-        LOG.warn("Finished processing " + songName + " successfully.");
-        songEntityStagingRepository.save(songEntity);
+        LOG.info("Added " + songName + " successfully.");
+        songEntityRepository.save(songEntity);
     }
 
-    private String getCleanedLyrics(SongEntityStaging songEntity) {
+    private String getCleanedLyrics(SongEntity songEntity) {
         String lyricsResponse = restTemplate.getForObject(songEntity.getLink(), String.class);
         if (lyricsResponse != null) {
             Document lyricsDoc = Jsoup.parse(lyricsResponse);
@@ -102,45 +95,22 @@ public class SongLoader {
     private void processSongs(String response) {
         Document doc = Jsoup.parse(response);
         Elements elements = doc.getElementsByTag("tr");
-        int allSongs = 1;
-        int newSongs = 0;
-        songEntityStagingRepository.deleteAll();
-        for (Element element : elements.subList(1, elements.size())) {
-            if (processSong(element)) {
-                newSongs++;
-            }
-            LOG.warn("...processed " + allSongs++ + " / " + elements.size() + " songs...");
+        List<Element> subList = elements.subList(1, elements.size());
+        for (int i = 0; i < subList.size(); i++) {
+            Element element = subList.get(i);
+            processSong(element);
+            LOG.info("...processed " + i+1 + " / " + elements.size() + " songs...");
         }
-        LOG.warn("Found " + newSongs + ".");
     }
 
-    private boolean processSong(Element element) {
+    private void processSong(Element element) {
         Element td = element.getElementsByTag("td").get(0);
         String songName = td.wholeText();
         try {
-            if (stageSongIfNew(td)) {
-                return true;
-            }
+            addSongIfNew(td);
         } catch (Exception e) {
             googliTweeter.tweet("GoogliApparatus caught exception while loading " + songName + " : " + e.getCause());
             // continue processing songs
-        }
-
-        return false;
-    }
-
-    private void loadStagedSongs() {
-        LOG.warn("Finished staging new songs successfully. Loading...");
-        for (SongEntityStaging song : songEntityStagingRepository.findAll()) {
-            googliTweeter.tweet("Loaded " + song.getName() + " into the GoogliApparatus");
-            SongEntity songEntity = new SongEntity();
-            songEntity.setId(song.getId());
-            songEntity.setLink(song.getLink());
-            songEntity.setLyrics(song.getLyrics());
-            songEntity.setName(song.getName());
-            songEntity.setNameLower(song.getNameLower());
-            songEntity.setLyricsBy(song.getLyricsBy());
-            songEntityRepository.save(songEntity);
         }
     }
 

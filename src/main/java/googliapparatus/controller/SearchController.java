@@ -47,7 +47,9 @@ public class SearchController {
     }
 
     @GetMapping("/api/search/lyrics")
-    public GoogliResponseDto searchLyrics(@RequestParam String filter, @RequestParam(required = false, defaultValue = "true") Boolean similar, @RequestParam(required = false) boolean wholeWord) throws OAuthExpectationFailedException, OAuthCommunicationException, OAuthMessageSignerException, IOException {
+    public GoogliResponseDto searchLyrics(@RequestParam String filter,
+                                          @RequestParam(required = false, defaultValue = "true") Boolean similar,
+                                          @RequestParam(required = false) boolean wholeWord) {
         List<SongDto> songs = new ArrayList<>();
         List<SimilarResult> similarResults = new ArrayList<>();
         try {
@@ -95,23 +97,23 @@ public class SearchController {
     }
 
     private void tweetResults(String filter, List<SongDto> songs) {
-        String theTweet = "\"" + filter + "\" returned " + songs.size() + " results";
+        String tweet = "\"" + filter + "\" returned " + songs.size() + " results";
         if (songs.size() > 0) {
-            theTweet += ":\n" + songs.get(0).getName();
+            tweet += ":\n" + songs.get(0).getName();
         }
         if (songs.size() > 1) {
-            theTweet += "\n" + songs.get(1).getName();
+            tweet += "\n" + songs.get(1).getName();
         }
         if (songs.size() > 2) {
-            theTweet += "\n" + songs.get(2).getName();
+            tweet += "\n" + songs.get(2).getName();
         }
         if (songs.size() > 3) {
-            theTweet += "...";
+            tweet += "...";
         }
-        googliTweeter.tweet(theTweet);
+        googliTweeter.tweet(tweet);
     }
 
     private void tweetResultsAsync(String filter, List<SongDto> songs) {
-        ((Runnable) () -> tweetResults(filter, songs)).run();
+        tweetResults(filter, songs);
     }
 }
