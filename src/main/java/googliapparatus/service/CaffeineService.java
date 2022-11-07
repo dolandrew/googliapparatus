@@ -20,6 +20,6 @@ public class CaffeineService {
     @Scheduled(cron = "0 */15 * * * *")
     public void guayusa() {
         LOG.info("Caffeinating...");
-        restTemplate.getForObject("http://googli-apparatus-backend.herokuapp.com/index.html", Void.class);
+        restTemplate.getForObject("http://googli-apparatus-backend.herokuapp.com/index.html", String.class);
     }
 }
