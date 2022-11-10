@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import static java.util.Collections.emptyList;
-import static java.util.Comparator.comparing;
 
 @RestController
 @CrossOrigin
@@ -29,11 +28,9 @@ public class SearchController {
     }
 
     @GetMapping("/api/search/lyrics")
-    public GoogliResponseDto searchLyrics(@RequestParam String filter,
-                                          @RequestParam(required = false, defaultValue = "true") Boolean similar,
-                                          @RequestParam(required = false) boolean wholeWord) {
+    public GoogliResponseDto searchLyrics(@RequestParam String filter) {
         try {
-            return searchService.search(filter, similar, wholeWord);
+            return searchService.search(filter);
         } catch (Exception e) {
             LOG.error(e.getMessage());
             googliTweeter.tweet("GoogliApparatus caught exception during search: " + e.getCause() + ": " + e.getMessage());

@@ -39,7 +39,9 @@ public class SearchService {
         this.googliTweeter = googliTweeter;
     }
 
-    public GoogliResponseDto search(String filter, Boolean similar, boolean wholeWord) {
+    public GoogliResponseDto search(String filter) {
+        boolean similar = false;
+        boolean wholeWord = false;
         List<SongDto> songs = new ArrayList<>();
         List<SimilarResult> similarResults = new ArrayList<>();
 
@@ -52,7 +54,7 @@ public class SearchService {
         if (wholeWord) {
             filter = " " + filter + " ";
         }
-        List<SongEntity> songEntities = songEntityRepository.findByLyricsContainsOrNameLowerContains(filter, filter);
+        List<SongEntity> songEntities = songEntityRepository.findByLyricsOrNameLowerContains(filter, filter);
         for (SongEntity songEntity : songEntities) {
             SongDto songDTO = objectMapper.convertValue(songEntity, SongDto.class);
             songs.add(songDTO);
@@ -71,7 +73,7 @@ public class SearchService {
             Set<String> similarWords = wordsApiProxyService.findSimilarWords(filter);
             for (String word : similarWords) {
                 word = word.trim().toLowerCase();
-                int songCount = songEntityRepository.findByLyricsContainsOrNameLowerContains(word, word).size();
+                int songCount = songEntityRepository.findByLyricsOrNameLowerContains(word, word).size();
                 if (songCount > 0) {
                     similarResults.add(new SimilarResult(songCount, word));
                 }
