@@ -20,6 +20,8 @@ import static org.mockito.Mockito.lenient;
 @ExtendWith(MockitoExtension.class)
 class SearchServiceTest {
 
+    private static final List<SongEntity> SONGS = new ArrayList<>();
+
     @Mock
     private GoogliTweeter googliTweeter;
 
@@ -31,8 +33,6 @@ class SearchServiceTest {
 
     @InjectMocks
     private SearchService underTest;
-
-    private final static List<SongEntity> SONGS = new ArrayList<>();
 
     @BeforeAll
     static void setUp() {
@@ -67,7 +67,8 @@ class SearchServiceTest {
     @Test
     void searchByPhrase() {
         lenient().doReturn(SONGS).when(repository)
-                .findByLyricsContainsOrNameLowerContains("come from the land", "come from the land");
+                .findByLyricsContainsOrNameLowerContains(
+                        "come from the land", "come from the land");
         List<SongDto> result = underTest.search(" come from the land ").songs();
         assertEquals(1, result.size());
         assertEquals("The Lizards", result.get(0).getName());

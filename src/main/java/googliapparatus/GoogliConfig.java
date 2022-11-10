@@ -18,19 +18,19 @@ public class GoogliConfig {
     @Value("${twitter.access.token.secret}")
     private String accessTokenSecret;
 
-    public String getApiKey() {
+    public final String getApiKey() {
         return apiKey;
     }
 
-    public String getApiKeySecret() {
+    public final String getApiKeySecret() {
         return apiKeySecret;
     }
 
-    public String getAccessToken() {
+    public final String getAccessToken() {
         return accessToken;
     }
 
-    public String getAccessTokenSecret() {
+    public final String getAccessTokenSecret() {
         return accessTokenSecret;
     }
 }
