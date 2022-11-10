@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+//     id 'checkstyle'
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        url = uri('https://repo.maven.apache.org/maven2/')
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-autoconfigure:2.7.5'
+    implementation 'org.springframework.boot:spring-boot-starter-web:2.7.5'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.7.5'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:2.7.5'
+    implementation 'org.postgresql:postgresql:42.5.0'
+    implementation 'org.jsoup:jsoup:1.15.3'
+    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+    implementation 'oauth.signpost:signpost-core:2.1.1'
+    implementation 'oauth.signpost:signpost-commonshttp4:2.1.1'
+    implementation 'org.apache.tomcat:tomcat-jdbc:9.0.68'
+    runtimeOnly 'com.h2database:h2:2.1.214'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.7.5'
+    testImplementation 'io.rest-assured:rest-assured:4.5.1'
+    compileOnly 'com.newrelic.agent.java:newrelic-java:7.11.0'
+}
+
+group = 'com.dolandrew'
+version = '0.0.1'
+description = 'Googli Apparatus Backend'
+java.sourceCompatibility = 17

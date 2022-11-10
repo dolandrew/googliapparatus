@@ -17,4 +17,3 @@ public class GoogliApparatusApplication {
         return restTemplateBuilder.build();
     }
 }
-
