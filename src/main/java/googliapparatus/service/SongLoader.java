@@ -8,6 +8,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -23,7 +24,7 @@ import static org.hibernate.internal.util.collections.CollectionHelper.isNotEmpt
 @EnableScheduling
 public class SongLoader {
 
-    private final RestTemplate restTemplate;
+    private RestTemplate restTemplate = new RestTemplateBuilder().build();
 
     private final SongEntityRepository songEntityRepository;
 
@@ -33,36 +34,39 @@ public class SongLoader {
 
     private static final Logger LOG = LoggerFactory.getLogger(SongLoader.class);
 
-    public SongLoader(RestTemplate restTemplate, SongEntityRepository songEntityRepository, GoogliTweeter googliTweeter) {
-        this.restTemplate = restTemplate;
-        this.songEntityRepository = songEntityRepository;
-        this.googliTweeter = googliTweeter;
+    public SongLoader(final SongEntityRepository entityRepository,
+                      final GoogliTweeter tweeter) {
+        this.songEntityRepository = entityRepository;
+        this.googliTweeter = tweeter;
     }
 
-    @Scheduled(cron="${cron.load.songs}")
+    @Scheduled(cron = "${cron.load.songs}")
     @Transactional
-    public void loadSongs() {
+    public final void loadSongs() {
         try {
             LOG.info("Checking for new songs to load...");
-            String response = restTemplate.getForObject(PHISH_NET_URL + "/songs", String.class);
+            String response = restTemplate.getForObject(PHISH_NET_URL
+                    + "/songs", String.class);
             processSongs(response);
         } catch (Exception e) {
-            googliTweeter.tweet("GoogliApparatus caught exception while loading songs: " + e.getCause());
+            googliTweeter.tweet("GoogliApparatus caught exception "
+                    + "while loading songs: " + e.getCause());
         }
     }
 
-    private void addSongIfNew(Element td) throws InterruptedException {
+    private void addSongIfNew(final Element td) throws InterruptedException {
         String songName = td.wholeText();
         if (isNotEmpty(songEntityRepository.findAllByName(songName))) {
             LOG.info("Skipping " + songName + " because it is already loaded.");
             return;
         }
-        String link = PHISH_NET_URL + td.getElementsByTag("a").attr("href") + "/lyrics";
+        String link = PHISH_NET_URL + td.getElementsByTag("a")
+                .attr("href") + "/lyrics";
         saveSong(songName, link);
         Thread.sleep(10000);
     }
 
-    private void saveSong(String songName, String link) {
+    private void saveSong(final String songName, final String link) {
         SongEntity songEntity = new SongEntity();
         songEntity.setId(UUID.randomUUID().toString());
         songEntity.setLink(link);
@@ -78,11 +82,12 @@ public class SongLoader {
         songEntityRepository.save(songEntity);
     }
 
-    private String getCleanedLyrics(SongEntity songEntity) {
-        String lyricsResponse = restTemplate.getForObject(songEntity.getLink(), String.class);
+    private String getCleanedLyrics(final SongEntity songEntity) {
+        String lyricsResponse = restTemplate.getForObject(songEntity.getLink(),
+                String.class);
         if (lyricsResponse != null) {
             Document lyricsDoc = Jsoup.parse(lyricsResponse);
-            Elements blockquotes = lyricsDoc.getElementsByTag("blockquote");
+            var blockquotes = lyricsDoc.getElementsByTag("blockquote");
             if (blockquotes.size() > 0) {
                 Element lyrics = blockquotes.get(0);
                 String cleanLyrics = cleanPreLyricText(lyrics);
@@ -92,29 +97,31 @@ public class SongLoader {
         return null;
     }
 
-    private void processSongs(String response) {
+    private void processSongs(final String response) {
         Document doc = Jsoup.parse(response);
         Elements elements = doc.getElementsByTag("tr");
         List<Element> subList = elements.subList(1, elements.size());
         for (int i = 0; i < subList.size(); i++) {
             Element element = subList.get(i);
             processSong(element);
-            LOG.info("...processed " + i+1 + " / " + elements.size() + " songs...");
+            LOG.info("Processed " + i + 1 + " / " + elements.size() + " songs"
+                    + "...");
         }
     }
 
-    private void processSong(Element element) {
+    private void processSong(final Element element) {
         Element td = element.getElementsByTag("td").get(0);
         String songName = td.wholeText();
         try {
             addSongIfNew(td);
         } catch (Exception e) {
-            googliTweeter.tweet("GoogliApparatus caught exception while loading " + songName + " : " + e.getCause());
+            googliTweeter.tweet("GoogliApparatus caught exception "
+                    + "while loading " + songName + " : " + e.getCause());
             // continue processing songs
         }
     }
 
-    private String getLyricsBy(String cleanLyrics) {
+    private String getLyricsBy(final String cleanLyrics) {
         int openParen = cleanLyrics.indexOf("(");
         int closeParen = cleanLyrics.indexOf(")");
         if (openParen != -1 && closeParen != -1) {
@@ -123,43 +130,52 @@ public class SongLoader {
         return null;
     }
 
-    private String cleanPreLyricText(Element lyrics) {
+    private String cleanPreLyricText(final Element lyrics) {
         return lyrics.wholeText()
-                            .replaceAll("[\r\n\t]", " ")
-                            .replace("Who Is She?", "")
-                            .replace("Music, Inc.", "")
-                            .replace("Music, Inc", "")
-                            .replace("by  Music, Inc", "")
-                            .replace("Music, BMI", "")
-                            .replace("Music (BMI)", "")
-                            .replace("(BMI)", "")
-                            .replace("(BMI_", "")
-                            .replace("seven below inc.", "")
-                            .replace("©", "")
-                            .replace("ï¿½", "")
-                            .replace("  ", " ");
+                .replaceAll("[\r\n\t]", " ")
+                .replace("Who Is She?", "")
+                .replace("Music, Inc.", "")
+                .replace("Music, Inc", "")
+                .replace("by  Music, Inc", "")
+                .replace("Music, BMI", "")
+                .replace("Music (BMI)", "")
+                .replace("(BMI)", "")
+                .replace("(BMI_", "")
+                .replace("seven below inc.", "")
+                .replace("©", "")
+                .replace("ï¿½", "")
+                .replace("  ", " ");
     }
 
-    private String removeCreditsFromLyrics(String cleanLyrics) {
-        cleanLyrics = cleanLyrics.replace("(Anastasio)", "")
+    private String removeCreditsFromLyrics(final String lyricsWithCredits) {
+        return lyricsWithCredits.replace("(Anastasio)", "")
                 .replace("(Gordon)", "")
                 .replace("(Lewis)", "")
                 .replace("(Reed)", "")
                 .replace("(Anastasio, Marshall)", "")
-                .replace("(Anastasio/Fishman/Gordon/McConnell/Dude of Life)", "")
+                .replace("(Anastasio/Fishman/Gordon/"
+                        + "McConnell/Dude of Life)", "")
                 .replace("(Fishman)", "")
                 .replace("(Anastasio/Fishman)", "")
-                .replace("(Anastasio/Fishman/Gordon/McConnell)", "")
-                .replace("(Anastasio/Gordon/Fishman/McConnell/Long)", "")
-                .replace("(Anastasio/Marshall/Gordon/McConnell/Fishman)", "")
+                .replace("(Anastasio/Fishman/"
+                        + "Gordon/McConnell)", "")
+                .replace("(Anastasio/Gordon/"
+                        + "Fishman/McConnell/Long)", "")
+                .replace("(Anastasio/Marshall/"
+                        + "Gordon/McConnell/Fishman)", "")
                 .replace("(Anastasio/Marshall/Woolf)", "")
-                .replace("(Byrne)  Warner Chappell  (ASCAP)", "")
+                .replace("(Byrne)  Warner "
+                        + "Chappell  (ASCAP)", "")
                 .replace("(Diamond/Horovitz/Yauch)", "")
-                .replace("(Dylan)  Copyright  1968 by Dwarf Music; renewed 1996 by Dwarf Music", "")
-                .replace("(Fishman/Anastasio/Marshall/McConnell)", "")
+                .replace("(Dylan)  Copyright  1968 by Dwarf Music; "
+                        + "renewed 1996 by Dwarf Music", "")
+                .replace("(Fishman/Anastasio/"
+                        + "Marshall/McConnell)", "")
                 .replace("(Gordon, Linitz)", "")
-                .replace("(Gordon/Anastasio/Fishman/McConnell)", "")
-                .replace("(Hendrix)   Experience Hendrix LLC (ASCAP)", "")
+                .replace("(Gordon/Anastasio/Fishman/McConnell)",
+                        "")
+                .replace("(Hendrix)   Experience"
+                        + " Hendrix LLC (ASCAP)", "")
                 .replace("(Howard/Emerson)", "")
                 .replace("(O'Brien)", "")
                 .replace("(Seals)", "")
@@ -167,15 +183,18 @@ public class SongLoader {
                 .replace("(Anastasio/O'Brien)", "")
                 .replace("(Anastasio/Marshall/Herman)", "")
                 .replace("(Garcia/Hunter)", "")
-                .replace("(Anastasio/Marshall/Woolf/Szuter)", "")
-                .replace("(Anastasio, Fishman, Gordon, Marshall, McConnell)", "")
+                .replace("(Anastasio/Marshall/Woolf/Szuter)",
+                        "")
+                .replace("(Anastasio, Fishman, Gordon, "
+                        + "Marshall, McConnell)", "")
                 .replace("(Anastasio/Marshall)", "")
                 .replace("(Anastasio/Pollak)", "")
                 .replace("(Anastasio, Goodman)", "")
-                .replace("(Anastasio/Fishman/Gordon/McConnell/Marshall)", "")
+                .replace("(Anastasio/Fishman/Gordon/"
+                        + "McConnell/Marshall)", "")
                 .replace("(Anastasio/Dude of Life)", "")
                 .replace("   by   ", "")
-                .replace("(Anastasio/Abrahams/The Dude of Life)", "");
-        return cleanLyrics;
+                .replace("(Anastasio/Abrahams/The Dude of Life)",
+                        "");
     }
 }

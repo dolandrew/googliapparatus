@@ -5,7 +5,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Entity
-public class SongEntity {
+public final class SongEntity {
     @Id
     private String id;
 
@@ -28,47 +28,47 @@ public class SongEntity {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setId(final String s) {
+        this.id = s;
     }
 
     public String getLink() {
         return link;
     }
 
-    public void setLink(String link) {
-        this.link = link;
+    public void setLink(final String s) {
+        this.link = s;
     }
 
     public String getLyrics() {
         return lyrics;
     }
 
-    public void setLyrics(String lyrics) {
-        this.lyrics = lyrics;
+    public void setLyrics(final String s) {
+        this.lyrics = s;
     }
 
     public String getLyricsBy() {
         return lyricsBy;
     }
 
-    public void setLyricsBy(String lyricsBy) {
-        this.lyricsBy = lyricsBy;
+    public void setLyricsBy(final String s) {
+        this.lyricsBy = s;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setName(final String s) {
+        this.name = s;
     }
 
     public String getNameLower() {
         return nameLower;
     }
 
-    public void setNameLower(String nameLower) {
-        this.nameLower = nameLower;
+    public void setNameLower(final String s) {
+        this.nameLower = s;
     }
 }

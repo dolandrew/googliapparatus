@@ -14,11 +14,20 @@ Dark Mode: To switch to Dark Mode, click the Moon Icon in the top left corner.
 ![Screen Shot 2022-07-28 at 4 18 14 PM](https://user-images.githubusercontent.com/28452598/181653209-4b6029cf-bee3-4298-841f-0c6d8278e0f3.jpg)
 
 
-## To build and run with maven:
+## To build and run with Gradle:
 
 ```
-mvn clean install
-mvn spring-boot:run
+./gradlew build
+./gradlew bootRun
 ```
+
+## To build and run with Docker:
+
+```
+docker build . -t googliapparatus
+docker run googliapparatus
+```
+
+Note: Postgres database is required
 
 This app is deployed to Heroku at http://googliapparatus.herokuapp.com/

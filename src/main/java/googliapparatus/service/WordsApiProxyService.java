@@ -1,6 +1,7 @@
 package googliapparatus.service;
 
 import googliapparatus.WordsApiConfig;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -15,30 +16,35 @@ import java.util.Set;
 import static java.util.Collections.emptySet;
 
 @Service
-public class WordsApiProxyService {
-    private final GoogliTweeter googliTweeter;
+public final class WordsApiProxyService {
 
-    private final RestTemplate restTemplate;
+    private final GoogliTweeter googliTweeter;
 
     private final WordsApiConfig wordsApiConfig;
 
-    public WordsApiProxyService(GoogliTweeter googliTweeter, RestTemplate restTemplate, WordsApiConfig wordsApiConfig) {
-        this.googliTweeter = googliTweeter;
-        this.restTemplate = restTemplate;
-        this.wordsApiConfig = wordsApiConfig;
+    private RestTemplate restTemplate = new RestTemplateBuilder().build();
+
+    public WordsApiProxyService(final GoogliTweeter tweeter,
+                                final WordsApiConfig apiConfig) {
+        this.googliTweeter = tweeter;
+        this.wordsApiConfig = apiConfig;
     }
 
-    public Set<String> findSimilarWords(String query) {
+    public Set<String> findSimilarWords(final String queryWithQuotes) {
         try {
-            query = query.replaceAll("\"", "");
+            String query = queryWithQuotes.replaceAll("\"", "");
             HttpHeaders headers = new HttpHeaders();
-            headers.add("X-RapidAPI-Host", "wordsapiv1.p.rapidapi.com");
-            headers.add("X-RapidAPI-Key", wordsApiConfig.getApiKey());
+            headers.add("X-RapidAPI-Host",
+                    "wordsapiv1.p.rapidapi.com");
+            headers.add("X-RapidAPI-Key",
+                    wordsApiConfig.getApiKey());
             String url = "https://wordsapiv1.p.rapidapi.com/words/" + query;
             HttpEntity<Object> requestEntity = new HttpEntity<>(headers);
-            var response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, LinkedHashMap.class);
+            var response = restTemplate.exchange(url,
+                    HttpMethod.GET, requestEntity, LinkedHashMap.class);
             Set<String> list = new HashSet<>();
-            List<LinkedHashMap> results = (List<LinkedHashMap>) response.getBody().get("results");
+            List<LinkedHashMap> results = (List<LinkedHashMap>) response
+                    .getBody().get("results");
             for (LinkedHashMap result : results) {
                 extracted(list, result, "similarTo");
                 extracted(list, result, "typeOf");
@@ -49,12 +55,14 @@ public class WordsApiProxyService {
             list.remove(query);
             return list;
         } catch (Exception e) {
-            googliTweeter.tweet("GoogliApparatus caught exception from WordsAPI: " + e.getCause());
+            googliTweeter.tweet("GoogliApparatus caught exception "
+                    + "from WordsAPI: " + e.getCause());
             return emptySet();
         }
     }
 
-    private void extracted(Set<String> list, LinkedHashMap result, String key) {
+    private void extracted(final Set<String> list, final LinkedHashMap result,
+                           final String key) {
         List<String> words = (List<String>) result.get(key);
         if (words != null) {
             list.addAll(words);

@@ -15,44 +15,49 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 
 @Service
-public class GoogliTweeter {
+public final class GoogliTweeter {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GoogliTweeter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(
+            GoogliTweeter.class);
 
-    private final GoogliConfig creds;
+    private final GoogliConfig googliConfig;
 
     private final Environment environment;
 
-    public GoogliTweeter(GoogliConfig creds, Environment environment) {
-        this.creds = creds;
-        this.environment = environment;
+    public GoogliTweeter(final GoogliConfig config,
+                         final Environment env) {
+        this.googliConfig = config;
+        this.environment = env;
     }
 
-    public void tweet(String tweet) {
+    public void tweet(final String tweet) {
         LOG.warn("@GoogliApparatus tweeted: \"" + tweet + "\"");
         tweet(tweet + "\n\n" + System.currentTimeMillis(),
-                creds.getApiKey(), creds.getApiKeySecret(),
-                creds.getAccessToken(), creds.getAccessTokenSecret());
+                googliConfig.getApiKey(), googliConfig.getApiKeySecret(),
+                googliConfig.getAccessToken(),
+                googliConfig.getAccessTokenSecret());
     }
 
-    public void tweet(String tweet, Throwable e) {
-        LOG.warn("@GoogliApparatus tweeted: \"" + tweet + "\"", e);
-        tweet(tweet + ": " + e.getCause() + "\n\n" + System.currentTimeMillis(),
-                creds.getApiKey(), creds.getApiKeySecret(),
-                creds.getAccessToken(), creds.getAccessTokenSecret());
-    }
-
-    public void tweet(String tweet, String apiKey, String apiKeySecret, String accessToken, String accessTokenSecret) {
-        String encodedTweet = URLEncoder.encode(tweet, Charset.defaultCharset());
-        String url = "https://api.twitter.com/1.1/statuses/update.json?status=" + encodedTweet;
+    public void tweet(final String tweet, final String apiKey,
+                      final String apiKeySecret, final String accessToken,
+                      final String accessTokenSecret) {
+        String encodedTweet = URLEncoder.encode(tweet,
+                Charset.defaultCharset());
+        String url = "https://api.twitter.com/1.1/statuses/update.json?status="
+                + encodedTweet;
         String failureMessage = "Error trying to tweet: \"" + tweet + "\".";
 
-        post(url, null, failureMessage, apiKey, apiKeySecret, accessToken, accessTokenSecret, tweet);
+        post(url, failureMessage, apiKey, apiKeySecret,
+                accessToken, accessTokenSecret, tweet);
     }
 
-    private void post(String url, String successMessage, String failureMessage, String apiKey, String apiKeySecret, String accessToken, String accessTokenSecret, String tweet) {
+    private void post(final String url, final String failureMessage,
+                      final String apiKey, final String apiKeySecret,
+                      final String accessToken, final String accessTokenSecret,
+                      final String tweet) {
         try {
-            OAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(apiKey, apiKeySecret);
+            OAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(apiKey,
+                    apiKeySecret);
             oAuthConsumer.setTokenWithSecret(accessToken, accessTokenSecret);
             HttpPost httpPost = new HttpPost(url);
             oAuthConsumer.sign(httpPost);
@@ -64,8 +69,8 @@ public class GoogliTweeter {
                 return;
             }
             httpClient.execute(httpPost);
-            if (successMessage != null) {
-                LOG.info(successMessage);
+            if (null != null) {
+                LOG.info(null);
             }
         } catch (Exception e) {
             LOG.error(failureMessage, e);
@@ -73,6 +78,7 @@ public class GoogliTweeter {
     }
 
     private boolean localEnvironment() {
-        return environment.getActiveProfiles().length > 0 && environment.getActiveProfiles()[0].equals("local");
+        return environment.getActiveProfiles().length > 0
+                && environment.getActiveProfiles()[0].equals("local");
     }
 }
