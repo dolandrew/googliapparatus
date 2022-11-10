@@ -39,7 +39,9 @@ public class SearchService {
         this.googliTweeter = googliTweeter;
     }
 
-    public GoogliResponseDto search(String filter, Boolean similar, boolean wholeWord) {
+    public GoogliResponseDto search(String filter) {
+        boolean similar = false;
+        boolean wholeWord = false;
         List<SongDto> songs = new ArrayList<>();
         List<SimilarResult> similarResults = new ArrayList<>();
 
@@ -60,7 +62,7 @@ public class SearchService {
         }
         addSimilarResults(filter, similar, similarResults, songEntities);
         songs.sort(comparing(SongDto::getName));
-        similarResults.sort(comparing(SimilarResult::getCount).reversed());
+        similarResults.sort(comparing(SimilarResult::count).reversed());
 
         tweetResultsAsync(filter, songs);
         return new GoogliResponseDto(songs, similarResults);

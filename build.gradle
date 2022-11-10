@@ -1,0 +1,79 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '2.7.5'
+    id 'jacoco'
+    id 'org.sonarqube' version '3.4.0.2513'
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        url = uri('https://repo.maven.apache.org/maven2/')
+    }
+}
+
+dependencies {
+    compileOnly 'com.newrelic.agent.java:newrelic-java:7.11.0'
+    implementation 'org.springframework.boot:spring-boot-autoconfigure:2.7.5'
+    implementation 'org.springframework.boot:spring-boot-starter-web:2.7.5'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.7.5'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:2.7.5'
+    implementation 'org.postgresql:postgresql:42.5.0'
+    implementation 'org.jsoup:jsoup:1.15.3'
+    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+    implementation 'oauth.signpost:signpost-core:2.1.1'
+    implementation 'oauth.signpost:signpost-commonshttp4:2.1.1'
+    implementation 'org.apache.tomcat:tomcat-jdbc:9.0.68'
+    implementation 'javax.xml.bind:jaxb-api:2.3.0'
+    runtimeOnly 'com.h2database:h2:2.1.214'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.7.5'
+}
+
+testing {
+    suites {
+        test {
+            useJUnitJupiter('5.8.2')
+        }
+    }
+}
+
+test {
+    finalizedBy jacocoTestReport, javadoc
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = true
+        dependsOn test
+    }
+}
+
+jar {
+     baseName = 'googliapparatus'
+     version =  '1.0.0'
+ }
+
+javadoc {
+     source = sourceSets.main.allJava
+     options {
+        addStringOption('Xdoclint:none', '-quiet')
+     }
+ }
+
+sonarqube {
+    properties {
+        property 'sonar.projectName', 'googliapparatus'
+        property 'sonar.login', 'admin'
+        property 'sonar.password', 'password'
+    }
+}
+
+gradleEnterprise {
+     buildScan {
+         termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+         termsOfServiceAgree = 'yes'
+         publishAlways()
+     }
+}
+
+java.sourceCompatibility = 17

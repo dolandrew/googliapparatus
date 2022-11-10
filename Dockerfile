@@ -1,9 +1,15 @@
-FROM openjdk:11-jdk
+FROM gradle:jdk17 as builder
 
-WORKDIR /
+COPY --chown=gradle:gradle . /home/gradle/src
+WORKDIR /home/gradle/src
+RUN gradle build
 
-ADD /target/googliapparatus-0.0.1.jar googliapparatus-0.0.1.jar
+FROM openjdk:17-alpine
 
 EXPOSE 8080
 
-CMD java -jar googliapparatus-0.0.1.jar
+RUN mkdir /app
+
+COPY --from=builder /home/gradle/src/build/libs/googliapparatus.jar /application.jar
+
+ENTRYPOINT ["java", "-jar", "application.jar"]
