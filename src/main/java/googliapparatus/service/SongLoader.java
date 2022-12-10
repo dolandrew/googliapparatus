@@ -21,18 +21,14 @@ import java.util.UUID;
 import static org.hibernate.internal.util.collections.CollectionHelper.isNotEmpty;
 
 @Component
-@EnableScheduling
+//@EnableScheduling
 public class SongLoader {
 
-    private RestTemplate restTemplate = new RestTemplateBuilder().build();
-
-    private final SongEntityRepository songEntityRepository;
-
-    private final GoogliTweeter googliTweeter;
-
     private static final String PHISH_NET_URL = "http://www.phish.net";
-
     private static final Logger LOG = LoggerFactory.getLogger(SongLoader.class);
+    private final SongEntityRepository songEntityRepository;
+    private final GoogliTweeter googliTweeter;
+    private RestTemplate restTemplate = new RestTemplateBuilder().build();
 
     public SongLoader(final SongEntityRepository entityRepository,
                       final GoogliTweeter tweeter) {

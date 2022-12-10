@@ -15,12 +15,10 @@ import static java.util.Collections.emptyList;
 @RestController
 @CrossOrigin
 public final class SearchController {
-    private final GoogliTweeter googliTweeter;
-
-    private final SearchService searchService;
-
     private static final Logger LOG = LoggerFactory.getLogger(
             SearchController.class);
+    private final GoogliTweeter googliTweeter;
+    private final SearchService searchService;
 
     public SearchController(final GoogliTweeter tweeter,
                             final SearchService service) {

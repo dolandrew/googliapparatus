@@ -3,17 +3,17 @@
 
 name: Build & Test
 
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 17
-      uses: actions/setup-java@v1
-      with:
-        java-version: 17
-    - name: Build & Test
-      run: gradle build
+      - uses: actions/checkout@v2
+      - name: Set up JDK 17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 17
+      - name: Build & Test
+        run: gradle build
